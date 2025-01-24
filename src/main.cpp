@@ -1,6 +1,8 @@
 #include <SDL3\SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
+#include "assets.h"
+
 #include <stdio.h>
 
 #include "core.h"
@@ -476,6 +478,7 @@ int main(int argc, char* argv[])
 {
 	platform_init();
 
+
 	App app{};
 
 	SDL_Init(SDL_INIT_VIDEO);
@@ -547,6 +550,8 @@ int main(int argc, char* argv[])
 
 	SDL_Renderer* renderer = SDL_CreateRenderer(app.window, nullptr);
 
+	load_assets(renderer);
+
 	bool is_running = true;
 
 	// milliseconds current = SDL_GetTicks();
@@ -584,7 +589,6 @@ int main(int argc, char* argv[])
 		render(renderer, player_bubbles, player_bubble_count);
 		render(renderer, auto_bubbles, auto_bubble_count);
 		render(renderer, &player);
-
 		SDL_RenderPresent(renderer);
 
 		post_render_update(&player);
