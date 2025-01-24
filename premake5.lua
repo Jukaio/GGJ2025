@@ -26,17 +26,21 @@ workspace "Engine"
     includedirs
     {
         "src",
-        "dependencies/sdl3/include"
+        "dependencies/sdl3/include",
+        "dependencies/sdl3_ttf/include"
     }
 
     libdirs
     {
-        "dependencies/sdl3/lib/%{cfg.system}/%{cfg.architecture}"
+        "dependencies/sdl3/lib/%{cfg.system}/%{cfg.architecture}",
+        "dependencies/sdl3_ttf/lib/%{cfg.system}/%{cfg.architecture}"
+
     }
     
     postbuildcommands
     {
-        "{COPY} %{wks.location}/../dependencies/sdl3/lib/%{cfg.system}/%{cfg.architecture}/SDL3.dll %{cfg.buildtarget.directory}"
+        "{COPY} %{wks.location}/../dependencies/sdl3/lib/%{cfg.system}/%{cfg.architecture}/SDL3.dll %{cfg.buildtarget.directory}",
+        "{COPY} %{wks.location}/../dependencies/sdl3_ttf/lib/%{cfg.system}/%{cfg.architecture}/SDL3_ttf.dll %{cfg.buildtarget.directory}"
     }
 
     defines
@@ -46,7 +50,8 @@ workspace "Engine"
 
     links
     {
-        "SDL3.lib"
+        "SDL3.lib",
+        "SDL3_ttf.lib"
     }
 
     flags { "MultiProcessorCompile" }

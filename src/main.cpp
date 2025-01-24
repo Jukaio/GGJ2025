@@ -1,8 +1,9 @@
 #include <SDL3\SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
+
 #include <stdio.h>
 
-#include "core.h";
-
+#include "core.h"
 typedef uint64_t milliseconds;
 
 struct KeyboardState
@@ -35,7 +36,7 @@ struct MouseState
 	float x;
 	float y;
 
-	Uint32 state;
+	Uint32 buttons;
 };
 
 enum
@@ -92,24 +93,25 @@ inline void update(MouseDevice* mouse_state)
 
 	float* x = &mouse_state->current.x;
 	float* y = &mouse_state->current.y;
-	mouse_state->current.state = SDL_GetMouseState(x, y);
+	mouse_state->current.buttons = SDL_GetMouseState(x, y);
 }
 
-inline bool button_down(MouseDevice const* mouse_state, int button_index, int frame_index = 0)
+inline bool button_down(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
 {
 	SDL_assert(frame_index < MOUSE_STATE_FRAME_COUNT &&
 		"Cannot go that much back in time - Should we fallback to previous?");
 
 	int button_mask = SDL_BUTTON_MASK(button_index);
-	return (mouse_state->frames[frame_index].state & button_mask) == button_mask;
+	const MouseState* state = &mouse_state->frames[frame_index];
+	return (state->buttons & button_mask) == button_mask;
 }
 
-inline bool button_up(MouseDevice const* mouse_state, int button_index, int frame_index = 0)
+inline bool button_up(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
 {
 	return !button_down(mouse_state, button_index, frame_index);
 }
 
-inline bool button_just_down(MouseDevice const* mouse_state, int button_index)
+inline bool button_just_down(const MouseDevice* mouse_state, int button_index)
 {
 	return button_down(mouse_state, button_index, 0) && !button_down(mouse_state, button_index, 1);
 }
@@ -132,26 +134,201 @@ void update(InputDevice* input)
 	update(&input->mouse);
 }
 
+struct SinglePlayer
+{
+	uint64_t previous_money;
+	uint64_t current_money;
+
+	uint64_t base;
+	uint64_t multiplier;
+};
+
 struct Bubble
 {
 	float x;
 	float y;
 
-	float vx;
-	float vy;
-
 	float radius;
 
-	SDL_Color primary_color;
+	SDL_Color color;
 };
 
-float math_multiply_float2(float ax, float ay, float bx, float by) { return (ax * bx) + (ay * by); }
+struct PlayerBubble
+{
+	Bubble bubble;
+
+	union
+	{
+		uint64_t mask;
+		struct
+		{
+			uint8_t e00 : 1;
+			uint8_t e01 : 1;
+			uint8_t e02 : 1;
+			uint8_t e03 : 1;
+			uint8_t e04 : 1;
+			uint8_t e05 : 1;
+			uint8_t e06 : 1;
+			uint8_t e07 : 1;
+			uint8_t e08 : 1;
+			uint8_t e09 : 1;
+			uint8_t e10 : 1;
+			uint8_t e11 : 1;
+			uint8_t e12 : 1;
+			uint8_t e13 : 1;
+			uint8_t e14 : 1;
+			uint8_t e15 : 1;
+			uint8_t e16 : 1;
+			uint8_t e17 : 1;
+			uint8_t e18 : 1;
+			uint8_t e19 : 1;
+			uint8_t e20 : 1;
+			uint8_t e21 : 1;
+			uint8_t e22 : 1;
+			uint8_t e23 : 1;
+			uint8_t e24 : 1;
+			uint8_t e25 : 1;
+			uint8_t e26 : 1;
+			uint8_t e27 : 1;
+			uint8_t e28 : 1;
+			uint8_t e29 : 1;
+			uint8_t e30 : 1;
+			uint8_t e31 : 1;
+			uint8_t e32 : 1;
+			uint8_t e33 : 1;
+			uint8_t e34 : 1;
+			uint8_t e35 : 1;
+			uint8_t e36 : 1;
+			uint8_t e37 : 1;
+			uint8_t e38 : 1;
+			uint8_t e39 : 1;
+			uint8_t e40 : 1;
+			uint8_t e41 : 1;
+			uint8_t e42 : 1;
+			uint8_t e43 : 1;
+			uint8_t e44 : 1;
+			uint8_t e45 : 1;
+			uint8_t e46 : 1;
+			uint8_t e47 : 1;
+			uint8_t e48 : 1;
+			uint8_t e49 : 1;
+			uint8_t e50 : 1;
+			uint8_t e51 : 1;
+			uint8_t e52 : 1;
+			uint8_t e53 : 1;
+			uint8_t e54 : 1;
+			uint8_t e55 : 1;
+			uint8_t e56 : 1;
+			uint8_t e57 : 1;
+			uint8_t e58 : 1;
+			uint8_t e59 : 1;
+			uint8_t e60 : 1;
+			uint8_t e61 : 1;
+			uint8_t e62 : 1;
+			uint8_t e63 : 1;
+		};
+	};
+};
+
+struct AutoBubleConfiguration
+{
+	uint64_t gain;
+	uint32_t accumulator;
+	uint32_t cooldown;
+	uint32_t amount;
+};
+
+struct AutoBubble
+{
+	Bubble bubble;
+
+	// union
+	//{
+	//	uint64_t mask;
+	//	struct
+	//	{
+	//		uint8_t e00 : 1;
+	//		uint8_t e01 : 1;
+	//		uint8_t e02 : 1;
+	//		uint8_t e03 : 1;
+	//		uint8_t e04 : 1;
+	//		uint8_t e05 : 1;
+	//		uint8_t e06 : 1;
+	//		uint8_t e07 : 1;
+	//		uint8_t e08 : 1;
+	//		uint8_t e09 : 1;
+	//		uint8_t e10 : 1;
+	//		uint8_t e11 : 1;
+	//		uint8_t e12 : 1;
+	//		uint8_t e13 : 1;
+	//		uint8_t e14 : 1;
+	//		uint8_t e15 : 1;
+	//		uint8_t e16 : 1;
+	//		uint8_t e17 : 1;
+	//		uint8_t e18 : 1;
+	//		uint8_t e19 : 1;
+	//		uint8_t e20 : 1;
+	//		uint8_t e21 : 1;
+	//		uint8_t e22 : 1;
+	//		uint8_t e23 : 1;
+	//		uint8_t e24 : 1;
+	//		uint8_t e25 : 1;
+	//		uint8_t e26 : 1;
+	//		uint8_t e27 : 1;
+	//		uint8_t e28 : 1;
+	//		uint8_t e29 : 1;
+	//		uint8_t e30 : 1;
+	//		uint8_t e31 : 1;
+	//		uint8_t e32 : 1;
+	//		uint8_t e33 : 1;
+	//		uint8_t e34 : 1;
+	//		uint8_t e35 : 1;
+	//		uint8_t e36 : 1;
+	//		uint8_t e37 : 1;
+	//		uint8_t e38 : 1;
+	//		uint8_t e39 : 1;
+	//		uint8_t e40 : 1;
+	//		uint8_t e41 : 1;
+	//		uint8_t e42 : 1;
+	//		uint8_t e43 : 1;
+	//		uint8_t e44 : 1;
+	//		uint8_t e45 : 1;
+	//		uint8_t e46 : 1;
+	//		uint8_t e47 : 1;
+	//		uint8_t e48 : 1;
+	//		uint8_t e49 : 1;
+	//		uint8_t e50 : 1;
+	//		uint8_t e51 : 1;
+	//		uint8_t e52 : 1;
+	//		uint8_t e53 : 1;
+	//		uint8_t e54 : 1;
+	//		uint8_t e55 : 1;
+	//		uint8_t e56 : 1;
+	//		uint8_t e57 : 1;
+	//		uint8_t e58 : 1;
+	//		uint8_t e59 : 1;
+	//		uint8_t e60 : 1;
+	//		uint8_t e61 : 1;
+	//		uint8_t e62 : 1;
+	//		uint8_t e63 : 1;
+	//	};
+	// };
+
+	AutoBubleConfiguration config;
+
+	SDL_Color color;
+
+	float x;
+	float y;
+	float width;
+	float height;
+};
 
 float math_distance(float ax, float ay, float bx, float by)
 {
 	float dx = bx - ax;
 	float dy = by - ay;
-	float magnitude = math_multiply_float2(ax, ay, bx, by);
+	float magnitude = (dx * dx) + (dy * dy);
 	if (magnitude > 0.0f)
 	{
 		return SDL_sqrtf(magnitude);
@@ -159,100 +336,139 @@ float math_distance(float ax, float ay, float bx, float by)
 	return 0.0f;
 }
 
-SDL_Rect get_rect(Bubble* bubble)
+SDL_Rect get_rect(const Bubble* bubble)
 {
 	int half = int(bubble->radius);
 	int size = int(bubble->radius * 2);
 	return SDL_Rect{ int(bubble->x) - half, int(bubble->y) - half, size, size };
 }
 
-SDL_FRect get_frect(Bubble* bubble)
+SDL_FRect get_frect(const Bubble* bubble)
 {
 	float half = bubble->radius;
 	float size = bubble->radius * 2;
 	return SDL_FRect{ bubble->x - half, bubble->y - half, size, size };
 }
 
-void update(App* app, Bubble* bubbles, size_t count, float dt)
+void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count, float dt)
 {
-
-	int width;
-	int height;
-	if (!SDL_GetWindowSizeInPixels(app->window, &width, &height))
+	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 	{
-		// TODO:...
-		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "%s", SDL_GetError());
-		return;
+		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
+		SDL_Scancode scancode_end = SDL_SCANCODE_9;
+		for (uint32_t current = scancode_begin; current <= scancode_end; current++)
+		{
+			if (key_just_down(&app->input.keyboard, SDL_Scancode(current)))
+			{
+				uint64_t multiplier = current - scancode_begin + 1;
+				player->multiplier = multiplier;
+			}
+		}
 	}
 
 	for (size_t index = 0; index < count; index++)
 	{
-		Bubble* bubble = &bubbles[index];
-
-		float half = bubble->radius;
-		float size = bubble->radius * 2;
-		SDL_Rect dst = get_rect(bubble);
-
-		float nx = 0.0f;
-		float ny = 0.0f;
-		if (bubble->x - half <= 0)
-		{
-			nx = nx + 1.0f;
-		}
-		if (bubble->x + half >= width)
-		{
-			nx = nx - 1.0f;
-		}
-		if (bubble->y - half <= 0)
-		{
-			ny = ny + 1.0f;
-		}
-		if (bubble->y + half >= height)
-		{
-			ny = ny - 1.0f;
-		}
-		float dot = math_multiply_float2(bubble->vx, bubble->vy, nx, ny);
-		bubble->vx = bubble->vx - 2.0f * dot * nx;
-		bubble->vy = bubble->vy - 2.0f * dot * ny;
-	}
-
-	for (size_t index = 0; index < count; index++)
-	{
-		Bubble* bubble = &bubbles[index];
-
-		bubble->x = bubble->x + (bubble->vx * dt);
-		bubble->y = bubble->y + (bubble->vy * dt);
-	}
-
-	for (size_t index = 0; index < count; index++)
-	{
-		Bubble* bubble = &bubbles[index];
+		PlayerBubble* bubble = &bubbles[index];
 
 		MouseState const* state = &app->input.mouse.current;
-		float distance = math_distance(state->x, state->y, bubble->x, bubble->y);
-		if (distance < bubble->radius)
+		float distance = math_distance(state->x, state->y, bubble->bubble.x, bubble->bubble.y);
+		if (distance < bubble->bubble.radius)
 		{
-			bubble->primary_color = SDL_Color{ 255, 0, 0, 255 };
+			bubble->bubble.color = SDL_Color{ 255, 0, 0, 255 };
+
+			if (is_player_clicking)
+			{
+				player->current_money = player->current_money + (player->base * player->multiplier);
+				bubble->bubble.color = SDL_Color{ 255, 255, 255, 255 };
+			}
 		}
 		else
 		{
-			bubble->primary_color = SDL_Color{ 0, 0, 255, 255 };
+			bubble->bubble.color = SDL_Color{ 0, 0, 255, 255 };
 		}
 	}
 }
 
-void render(SDL_Renderer* renderer, Bubble* bubbles, size_t count)
+void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count, float dt)
+{
+	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+
+	for (size_t index = 0; index < count; index++)
+	{
+		AutoBubble* bubble = &bubbles[index];
+
+
+		MouseState const* state = &app->input.mouse.current;
+		float global_x = bubble->bubble.x + bubble->x;
+		float global_y = bubble->bubble.y + bubble->y;
+		float distance = math_distance(state->x, state->y, global_x, global_y);
+		if (distance < bubble->bubble.radius)
+		{
+			bubble->bubble.color = SDL_Color{ 255, 0, 0, 255 };
+
+			if (is_player_clicking)
+			{
+				player->current_money = player->current_money + (player->base * player->multiplier);
+				bubble->bubble.color = SDL_Color{ 255, 255, 255, 255 };
+			}
+		}
+		else
+		{
+			bubble->bubble.color = SDL_Color{ 255, 0, 255, 255 };
+		}
+	}
+}
+
+
+void post_render_update(SinglePlayer* player) { player->previous_money = player->current_money; }
+
+void render(SDL_Renderer* renderer, PlayerBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
-		Bubble bubble = bubbles[index];
+		const Bubble* bubble = &bubbles[index].bubble;
 
-		SDL_Color c = bubble.primary_color;
+		SDL_Color c = bubble->color;
 		SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
 
-		SDL_FRect dst = get_frect(&bubble);
+		SDL_FRect dst = get_frect(bubble);
 
 		SDL_RenderFillRect(renderer, &dst);
+	}
+}
+
+void render(SDL_Renderer* renderer, AutoBubble* bubbles, size_t count)
+{
+	for (size_t index = 0; index < count; index++)
+	{
+		const AutoBubble* auto_bubble = &bubbles[index];
+		const Bubble* bubble = &auto_bubble->bubble;
+
+		{
+			SDL_Color c = auto_bubble->color;
+			SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
+
+			SDL_FRect dst = SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
+			SDL_RenderFillRect(renderer, &dst);
+		}
+
+		{
+			SDL_Color c = bubble->color;
+			SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
+
+			SDL_FRect dst = get_frect(bubble);
+			dst.x = dst.x + auto_bubble->x;
+			dst.y = dst.y + auto_bubble->y;
+			SDL_RenderFillRect(renderer, &dst);
+		}
+	}
+}
+
+void render(SDL_Renderer* renderer, SinglePlayer* player)
+{
+	if (player->previous_money != player->current_money)
+	{
+		SDL_Log("Player Score: %ull", player->current_money);
 	}
 }
 
@@ -264,22 +480,70 @@ int main(int argc, char* argv[])
 
 	SDL_Init(SDL_INIT_VIDEO);
 
-	app.window = SDL_CreateWindow("huge game", 1800, 1200, 0);
-
-	constexpr size_t bubble_count = 4;
-	Bubble bubbles[bubble_count];
-
-	for (size_t index = 0; index < bubble_count; index++)
-	{
-		float x = (128.0f * index) + 128;
-		bubbles[index] = Bubble{ x, 64.0f, 80.0f, 0.0f, 32.0f };
+	if (!TTF_Init()) {
+		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not init TTF: %s\n", SDL_GetError());
+		return -1;
 	}
 
+
+
+	constexpr int window_width = 1800;
+	constexpr int window_height = 1200;
+
+	constexpr int window_width_half = window_width / 2;
+	constexpr int window_height_half = window_height / 2;
+
+	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
 	if (app.window == NULL)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
 		return 1;
 	}
+
+	SinglePlayer player{};
+	player.base = 1;
+
+	// Only one bubble for now
+	constexpr size_t player_bubble_count = 1;
+	PlayerBubble player_bubbles[player_bubble_count];
+	player_bubbles->bubble.x = window_width_half;
+	player_bubbles->bubble.y = window_height_half;
+	player_bubbles->bubble.radius = 64.0f;
+
+	constexpr size_t auto_bubble_count = 9;
+	AutoBubble auto_bubbles[auto_bubble_count]{};
+
+	constexpr float radius = 32.0f;
+	constexpr float width = 128.0f;
+	constexpr float height = 96.0f;
+	constexpr float origin_x = 32.0f;
+	constexpr float origin_y = 32.0f;
+	constexpr float offset_y = 128.0f;
+	for (size_t index = 0; index < auto_bubble_count; index++)
+	{
+		AutoBubble* auto_bubble = &auto_bubbles[index];
+		Bubble* bubble = &auto_bubble->bubble;
+
+		auto_bubble->x = origin_x;
+		auto_bubble->y = origin_y + (index * offset_y);
+
+		auto_bubble->width = width;
+		auto_bubble->height = height;
+
+		auto_bubble->color = SDL_Color{ 255, 255, 0, 255 };
+
+		bubble->x = radius;
+		bubble->y = radius;
+		bubble->radius = radius;
+		bubble->color = SDL_Color{ 255, 0, 255, 255 };
+
+		AutoBubleConfiguration config = {};
+		config.cooldown = 10;
+		config.gain = index * 2;
+
+		auto_bubble->config = config;
+	}
+
 
 	SDL_Renderer* renderer = SDL_CreateRenderer(app.window, nullptr);
 
@@ -309,19 +573,26 @@ int main(int argc, char* argv[])
 		// Update
 		float dt_seconds = delta_time / 1000.0f;
 
-		update(&app, bubbles, bubble_count, dt_seconds);
+		update(&app, &player, player_bubbles, player_bubble_count, dt_seconds);
+		update(&app, &player, auto_bubbles, auto_bubble_count, dt_seconds);
 
 		// Render
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 
 		SDL_RenderClear(renderer);
 
-		render(renderer, bubbles, bubble_count);
+		render(renderer, player_bubbles, player_bubble_count);
+		render(renderer, auto_bubbles, auto_bubble_count);
+		render(renderer, &player);
 
 		SDL_RenderPresent(renderer);
+
+		post_render_update(&player);
 	}
 
 	SDL_DestroyWindow(app.window);
+
+	TTF_Quit();
 
 	SDL_Quit();
 
