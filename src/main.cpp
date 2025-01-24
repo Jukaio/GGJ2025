@@ -6,29 +6,29 @@
 
 typedef uint64_t milliseconds;
 
-struct keyboard_state_frame
+struct KeyboardState
 {
 	bool state[SDL_SCANCODE_COUNT];
 };
 
 enum { KEYBOARD_STATE_FRAME_COUNT = 2 };
 
-struct keyboard_device
+struct KeyboardDevice
 {
 	union
 	{
-		keyboard_state_frame state[KEYBOARD_STATE_FRAME_COUNT];
+		KeyboardState state[KEYBOARD_STATE_FRAME_COUNT];
 
 		struct
 		{
-			keyboard_state_frame current;
-			keyboard_state_frame previous;
+			KeyboardState current;
+			KeyboardState previous;
 			// ...
 		};
 	};
 };
 
-struct mouse_state_frame
+struct MouseState
 {
 	float x;
 	float y;
@@ -38,23 +38,23 @@ struct mouse_state_frame
 
 enum { MOUSE_STATE_FRAME_COUNT = 2 };
 
-struct mouse_device
+struct MouseDevice
 {
 // 0 = current; 1 = previous; ...
 	union
 	{
-		mouse_state_frame frames[MOUSE_STATE_FRAME_COUNT];
+		MouseState frames[MOUSE_STATE_FRAME_COUNT];
 
 		struct
 		{
-			mouse_state_frame current;
-			mouse_state_frame previous;
+			MouseState current;
+			MouseState previous;
 			// ...
 		};
 	};
 };
 
-inline void update(keyboard_device* keyboard_state)
+inline void update(KeyboardDevice* keyboard_state)
 {
 	int num_keys = 0;
 	bool const* current_state = SDL_GetKeyboardState(&num_keys);
@@ -68,26 +68,26 @@ inline void update(keyboard_device* keyboard_state)
 		size);
 }
 
-inline bool key_down(keyboard_device const* keyboard_state,
+inline bool key_down(KeyboardDevice const* keyboard_state,
 	SDL_Scancode scancode, int frame_index = 0)
 {
 	return keyboard_state->state[frame_index].state[(size_t)scancode];
 }
 
-inline bool key_up(keyboard_device const* keyboard_state, SDL_Scancode scancode,
+inline bool key_up(KeyboardDevice const* keyboard_state, SDL_Scancode scancode,
 	int frame_index = 0)
 {
 	return !key_down(keyboard_state, scancode, frame_index);
 }
 
-inline bool key_just_down(keyboard_device const* keyboard_state,
+inline bool key_just_down(KeyboardDevice const* keyboard_state,
 	SDL_Scancode scancode)
 {
 	return key_down(keyboard_state, scancode, 0) &&
 		key_up(keyboard_state, scancode, 1);
 }
 
-inline void update(mouse_device* mouse_state)
+inline void update(MouseDevice* mouse_state)
 {
 	mouse_state->previous = mouse_state->current;
 
@@ -96,7 +96,7 @@ inline void update(mouse_device* mouse_state)
 	mouse_state->current.state = SDL_GetMouseState(x, y);
 }
 
-inline bool button_down(mouse_device const* mouse_state, int button_index,
+inline bool button_down(MouseDevice const* mouse_state, int button_index,
 	int frame_index = 0)
 {
 	SDL_assert(
@@ -107,38 +107,38 @@ inline bool button_down(mouse_device const* mouse_state, int button_index,
 	return (mouse_state->frames[frame_index].state & button_mask) == button_mask;
 }
 
-inline bool button_up(mouse_device const* mouse_state, int button_index,
+inline bool button_up(MouseDevice const* mouse_state, int button_index,
 	int frame_index = 0)
 {
 	return !button_down(mouse_state, button_index, frame_index);
 }
 
-inline bool button_just_down(mouse_device const* mouse_state,
+inline bool button_just_down(MouseDevice const* mouse_state,
 	int button_index)
 {
 	return button_down(mouse_state, button_index, 0) &&
 		!button_down(mouse_state, button_index, 1);
 }
 
-struct input_device
+struct InputDevice
 {
-	mouse_device mouse;
-	keyboard_device keyboard;
+	MouseDevice mouse;
+	KeyboardDevice keyboard;
 };
 
-struct application
+struct App
 {
 	SDL_Window* window;
-	input_device input;
+	InputDevice input;
 };
 
-void update(input_device* input)
+void update(InputDevice* input)
 {
 	update(&input->keyboard);
 	update(&input->mouse);
 }
 
-struct bubble
+struct Bubble
 {
 	float x;
 	float y;
@@ -168,21 +168,21 @@ float math_distance(float ax, float ay, float bx, float by)
 	return 0.0f;
 }
 
-SDL_Rect get_rect(bubble* bubble)
+SDL_Rect get_rect(Bubble* bubble)
 {
 	int half = int(bubble->radius);
 	int size = int(bubble->radius * 2);
 	return SDL_Rect{ int(bubble->x) - half, int(bubble->y) - half, size, size };
 }
 
-SDL_FRect get_frect(bubble* bubble)
+SDL_FRect get_frect(Bubble* bubble)
 {
 	float half = bubble->radius;
 	float size = bubble->radius * 2;
 	return SDL_FRect{ bubble->x - half, bubble->y - half, size, size };
 }
 
-void update(application* app, bubble* bubbles, size_t count, float dt)
+void update(App* app, Bubble* bubbles, size_t count, float dt)
 {
 
 	int width;
@@ -196,7 +196,7 @@ void update(application* app, bubble* bubbles, size_t count, float dt)
 
 	for (size_t index = 0; index < count; index++)
 	{
-		bubble* bubble = &bubbles[index];
+		Bubble* bubble = &bubbles[index];
 
 		float half = bubble->radius;
 		float size = bubble->radius * 2;
@@ -227,7 +227,7 @@ void update(application* app, bubble* bubbles, size_t count, float dt)
 
 	for (size_t index = 0; index < count; index++)
 	{
-		bubble* bubble = &bubbles[index];
+		Bubble* bubble = &bubbles[index];
 
 		bubble->x = bubble->x + (bubble->vx * dt);
 		bubble->y = bubble->y + (bubble->vy * dt);
@@ -235,9 +235,9 @@ void update(application* app, bubble* bubbles, size_t count, float dt)
 
 	for (size_t index = 0; index < count; index++)
 	{
-		bubble* bubble = &bubbles[index];
+		Bubble* bubble = &bubbles[index];
 
-		mouse_state_frame const* state = &app->input.mouse.current;
+		MouseState const* state = &app->input.mouse.current;
 		float distance = math_distance(state->x, state->y, bubble->x, bubble->y);
 		if (distance < bubble->radius)
 		{
@@ -250,11 +250,11 @@ void update(application* app, bubble* bubbles, size_t count, float dt)
 	}
 }
 
-void render(SDL_Renderer* renderer, bubble* bubbles, size_t count)
+void render(SDL_Renderer* renderer, Bubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
-		bubble bubble = bubbles[index];
+		Bubble bubble = bubbles[index];
 
 		SDL_Color c = bubble.primary_color;
 		SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
@@ -269,19 +269,19 @@ int main(int argc, char* argv[])
 {
 	platform_init();
 
-	application app{};
+	App app{};
 
 	SDL_Init(SDL_INIT_VIDEO);
 
 	app.window = SDL_CreateWindow("huge game", 1800, 1200, 0);
 
 	constexpr size_t bubble_count = 4;
-	bubble bubbles[bubble_count];
+	Bubble bubbles[bubble_count];
 
 	for (size_t index = 0; index < bubble_count; index++)
 	{
 		float x = (128.0f * index) + 128;
-		bubbles[index] = bubble{ x, 64.0f, 80.0f, 0.0f, 32.0f };
+		bubbles[index] = Bubble{ x, 64.0f, 80.0f, 0.0f, 32.0f };
 	}
 
 	if (app.window == NULL)
