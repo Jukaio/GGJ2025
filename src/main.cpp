@@ -1,6 +1,5 @@
 #include <SDL3\SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-
 #include <stdio.h>
 
 #include "core.h"
@@ -60,62 +59,6 @@ struct MouseDevice
 	};
 };
 
-inline void update(KeyboardDevice* keyboard_state)
-{
-	int num_keys = 0;
-	const bool* current_state = SDL_GetKeyboardState(&num_keys);
-
-	const size_t size = num_keys * sizeof(*keyboard_state->current.state);
-
-	SDL_memcpy((bool*)keyboard_state->previous.state, (bool*)keyboard_state->current.state, size);
-
-	SDL_memcpy((bool*)keyboard_state->current.state, (bool*)current_state, size);
-}
-
-inline bool key_down(KeyboardDevice const* keyboard_state, SDL_Scancode scancode, int frame_index = 0)
-{
-	return keyboard_state->state[frame_index].state[(size_t)scancode];
-}
-
-inline bool key_up(KeyboardDevice const* keyboard_state, SDL_Scancode scancode, int frame_index = 0)
-{
-	return !key_down(keyboard_state, scancode, frame_index);
-}
-
-inline bool key_just_down(KeyboardDevice const* keyboard_state, SDL_Scancode scancode)
-{
-	return key_down(keyboard_state, scancode, 0) && key_up(keyboard_state, scancode, 1);
-}
-
-inline void update(MouseDevice* mouse_state)
-{
-	mouse_state->previous = mouse_state->current;
-
-	float* x = &mouse_state->current.x;
-	float* y = &mouse_state->current.y;
-	mouse_state->current.buttons = SDL_GetMouseState(x, y);
-}
-
-inline bool button_down(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
-{
-	SDL_assert(frame_index < MOUSE_STATE_FRAME_COUNT &&
-		"Cannot go that much back in time - Should we fallback to previous?");
-
-	int button_mask = SDL_BUTTON_MASK(button_index);
-	const MouseState* state = &mouse_state->frames[frame_index];
-	return (state->buttons & button_mask) == button_mask;
-}
-
-inline bool button_up(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
-{
-	return !button_down(mouse_state, button_index, frame_index);
-}
-
-inline bool button_just_down(const MouseDevice* mouse_state, int button_index)
-{
-	return button_down(mouse_state, button_index, 0) && !button_down(mouse_state, button_index, 1);
-}
-
 struct InputDevice
 {
 	MouseDevice mouse;
@@ -126,13 +69,11 @@ struct App
 {
 	SDL_Window* window;
 	InputDevice input;
-};
 
-void update(InputDevice* input)
-{
-	update(&input->keyboard);
-	update(&input->mouse);
-}
+	float tick_frequency;
+	float tick_accumulator;
+	float delta_time;
+};
 
 struct SinglePlayer
 {
@@ -159,7 +100,7 @@ struct PlayerBubble
 
 	union
 	{
-		uint64_t mask;
+		uint64_t archetype;
 		struct
 		{
 			uint8_t e00 : 1;
@@ -230,11 +171,16 @@ struct PlayerBubble
 	};
 };
 
-struct AutoBubleConfiguration
+
+struct AutoBubbleIncremental
 {
+	// Config
+	uint64_t cost;
 	uint64_t gain;
-	uint32_t accumulator;
 	uint32_t cooldown;
+
+	// Dynamic
+	uint32_t accumulator;
 	uint32_t amount;
 };
 
@@ -314,7 +260,7 @@ struct AutoBubble
 	//	};
 	// };
 
-	AutoBubleConfiguration config;
+	AutoBubbleIncremental inc;
 
 	SDL_Color color;
 
@@ -323,6 +269,101 @@ struct AutoBubble
 	float width;
 	float height;
 };
+
+inline void update(KeyboardDevice* keyboard_state)
+{
+	int num_keys = 0;
+	const bool* current_state = SDL_GetKeyboardState(&num_keys);
+
+	const size_t size = num_keys * sizeof(*keyboard_state->current.state);
+
+	SDL_memcpy((bool*)keyboard_state->previous.state, (bool*)keyboard_state->current.state, size);
+
+	SDL_memcpy((bool*)keyboard_state->current.state, (bool*)current_state, size);
+}
+
+inline bool key_down(KeyboardDevice const* keyboard_state, SDL_Scancode scancode, int frame_index = 0)
+{
+	return keyboard_state->state[frame_index].state[(size_t)scancode];
+}
+
+inline bool key_up(KeyboardDevice const* keyboard_state, SDL_Scancode scancode, int frame_index = 0)
+{
+	return !key_down(keyboard_state, scancode, frame_index);
+}
+
+inline bool key_just_down(KeyboardDevice const* keyboard_state, SDL_Scancode scancode)
+{
+	return key_down(keyboard_state, scancode, 0) && key_up(keyboard_state, scancode, 1);
+}
+
+inline void update(MouseDevice* mouse_state)
+{
+	mouse_state->previous = mouse_state->current;
+
+	float* x = &mouse_state->current.x;
+	float* y = &mouse_state->current.y;
+	mouse_state->current.buttons = SDL_GetMouseState(x, y);
+}
+
+inline bool button_down(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
+{
+	SDL_assert(frame_index < MOUSE_STATE_FRAME_COUNT &&
+		"Cannot go that much back in time - Should we fallback to previous?");
+
+	int button_mask = SDL_BUTTON_MASK(button_index);
+	const MouseState* state = &mouse_state->frames[frame_index];
+	return (state->buttons & button_mask) == button_mask;
+}
+
+inline bool button_up(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
+{
+	return !button_down(mouse_state, button_index, frame_index);
+}
+
+inline bool button_just_down(const MouseDevice* mouse_state, int button_index)
+{
+	return button_down(mouse_state, button_index, 0) && !button_down(mouse_state, button_index, 1);
+}
+
+void update(InputDevice* input)
+{
+	update(&input->keyboard);
+	update(&input->mouse);
+}
+
+
+void print(const Bubble* bubble, const char* prefix = "")
+{
+	SDL_Log("%sBubble Pos:(%.2f, %.2f) - Radius: %.2f - Color: R: %d G: %d B: %d A: %d", prefix, bubble->x, bubble->y,
+		bubble->radius, bubble->color.r, bubble->color.g, bubble->color.b, bubble->color.a);
+}
+
+
+void print(const PlayerBubble* bubble)
+{
+	SDL_Log("== PlayerBubble ==");
+	print(&bubble->bubble, "PlayerBubble.");
+	SDL_Log("-%sArchetype", "PlayerBubble.", bubble->archetype);
+}
+
+void print(const AutoBubbleIncremental* inc, const char* prefix = "")
+{
+	// Only show config, runtime data is not relevant
+	SDL_Log("%sAutoBubbleIncremental Cost: %llu - Gain: %llu - Cooldown: %u", prefix, inc->cost, inc->gain,
+		inc->cooldown);
+}
+
+void print(const AutoBubble* bubble, const char* prefix = "")
+{
+	// Only show config, runtime data is not relevant
+	SDL_Log("== AutoBubble ==");
+	print(&bubble->bubble, "AutoBubble.");
+	print(&bubble->inc, "AutoBubble.");
+	SDL_Log("%sAutoBubble Rect:(%.2f, %.2f, %.2f, %.2f) Color:(R: %d G: %d B: %d A: %d)", "AutoBubble.", bubble->x,
+		bubble->y, bubble->width, bubble->height, bubble->color.r, bubble->color.g, bubble->color.b,
+		bubble->color.a);
+}
 
 float math_distance(float ax, float ay, float bx, float by)
 {
@@ -350,7 +391,7 @@ SDL_FRect get_frect(const Bubble* bubble)
 	return SDL_FRect{ bubble->x - half, bubble->y - half, size, size };
 }
 
-void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count, float dt)
+void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 {
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 	{
@@ -389,14 +430,13 @@ void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count,
 	}
 }
 
-void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count, float dt)
+void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 {
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 
 	for (size_t index = 0; index < count; index++)
 	{
 		AutoBubble* bubble = &bubbles[index];
-
 
 		MouseState const* state = &app->input.mouse.current;
 		float global_x = bubble->bubble.x + bubble->x;
@@ -408,13 +448,35 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count, f
 
 			if (is_player_clicking)
 			{
-				player->current_money = player->current_money + (player->base * player->multiplier);
+				if (player->current_money >= bubble->inc.cost)
+				{
+					player->current_money = player->current_money - bubble->inc.cost;
+					bubble->inc.amount = bubble->inc.amount + 1;
+				}
 				bubble->bubble.color = SDL_Color{ 255, 255, 255, 255 };
 			}
 		}
 		else
 		{
 			bubble->bubble.color = SDL_Color{ 255, 0, 255, 255 };
+		}
+	}
+}
+
+void fixed_update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
+{
+	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+
+	for (size_t index = 0; index < count; index++)
+	{
+		AutoBubble* bubble = &bubbles[index];
+		AutoBubbleIncremental* inc = &bubble->inc;
+
+		inc->accumulator = inc->accumulator + 1;
+		while (inc->accumulator >= inc->cooldown)
+		{
+			inc->accumulator = inc->accumulator - inc->cooldown;
+			player->current_money = player->current_money + inc->gain * inc->amount;
 		}
 	}
 }
@@ -468,7 +530,7 @@ void render(SDL_Renderer* renderer, SinglePlayer* player)
 {
 	if (player->previous_money != player->current_money)
 	{
-		SDL_Log("Player Score: %ull", player->current_money);
+		SDL_Log("Player Score: %llu", player->current_money);
 	}
 }
 
@@ -476,16 +538,13 @@ int main(int argc, char* argv[])
 {
 	platform_init();
 
-	App app{};
-
 	SDL_Init(SDL_INIT_VIDEO);
 
-	if (!TTF_Init()) {
+	if (!TTF_Init())
+	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not init TTF: %s\n", SDL_GetError());
 		return -1;
 	}
-
-
 
 	constexpr int window_width = 1800;
 	constexpr int window_height = 1200;
@@ -493,6 +552,8 @@ int main(int argc, char* argv[])
 	constexpr int window_width_half = window_width / 2;
 	constexpr int window_height_half = window_height / 2;
 
+	App app{};
+	app.tick_frequency = 1.0f;
 	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
 	if (app.window == NULL)
 	{
@@ -509,6 +570,8 @@ int main(int argc, char* argv[])
 	player_bubbles->bubble.x = window_width_half;
 	player_bubbles->bubble.y = window_height_half;
 	player_bubbles->bubble.radius = 64.0f;
+	print(player_bubbles);
+	SDL_Log("");
 
 	constexpr size_t auto_bubble_count = 9;
 	AutoBubble auto_bubbles[auto_bubble_count]{};
@@ -537,13 +600,15 @@ int main(int argc, char* argv[])
 		bubble->radius = radius;
 		bubble->color = SDL_Color{ 255, 0, 255, 255 };
 
-		AutoBubleConfiguration config = {};
-		config.cooldown = 10;
-		config.gain = index * 2;
+		AutoBubbleIncremental config = {};
+		config.cooldown = 2;
+		config.cost = (32 + (index * 2) * 32);
+		config.gain = 1 + (index * 2);
+		auto_bubble->inc = config;
 
-		auto_bubble->config = config;
+		print(auto_bubble);
+		SDL_Log("");
 	}
-
 
 	SDL_Renderer* renderer = SDL_CreateRenderer(app.window, nullptr);
 
@@ -571,10 +636,16 @@ int main(int argc, char* argv[])
 		update(&app.input);
 
 		// Update
-		float dt_seconds = delta_time / 1000.0f;
+		app.delta_time = delta_time / 1000.0f;
+		app.tick_accumulator = app.tick_accumulator + app.delta_time;
+		while (app.tick_accumulator >= app.tick_frequency)
+		{
+			app.tick_accumulator = app.tick_accumulator - app.tick_frequency;
+			fixed_update(&app, &player, auto_bubbles, auto_bubble_count);
+		}
 
-		update(&app, &player, player_bubbles, player_bubble_count, dt_seconds);
-		update(&app, &player, auto_bubbles, auto_bubble_count, dt_seconds);
+		update(&app, &player, player_bubbles, player_bubble_count);
+		update(&app, &player, auto_bubbles, auto_bubble_count);
 
 		// Render
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
