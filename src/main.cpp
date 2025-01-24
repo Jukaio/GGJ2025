@@ -180,15 +180,15 @@ void update(application *app, bubble *bubbles, size_t count, float dt) {
       nx = nx + 1.0f;
     }
     if (bubble->x + half >= width) {
-      nx = nx - 1;
+      nx = nx - 1.0f;
     }
     if (bubble->y - half <= 0) {
-      ny = ny + 1;
+      ny = ny + 1.0f;
     }
     if (bubble->y + half >= height) {
-      ny = ny - 1;
+      ny = ny - 1.0f;
     }
-    float dot = math_multiply_float2(bubble->vx, nx, bubble->vy, ny);
+    float dot = math_multiply_float2(bubble->vx, bubble->vy, nx, ny);
     bubble->vx = bubble->vx - 2.0f * dot * nx;
     bubble->vy = bubble->vy - 2.0f * dot * ny;
   }
