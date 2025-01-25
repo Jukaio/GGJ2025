@@ -65,12 +65,15 @@ bool animation_render(App* app, const BubbleAnimation* animation, const Bubble* 
 	return false;
 }
 
-void render(App* app, const Bubble* bubble, Sprite sprite, float offset_x, float offset_y)
+void render(App* app, const Bubble* bubble, Sprite sprite, float offset_x, float offset_y, bool recolor)
 {
 	SDL_Color c = bubble->color;
 
 	SDL_Texture* texture = tex[(uint64_t)sprite];
-	SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+	if (recolor)
+	{
+		SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+	}
 	SDL_SetTextureAlphaMod(texture, c.a);
 
 	float w, h;
@@ -122,24 +125,22 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			{
 				render(app, bubble, Sprite::BubbleGhost);
 			}
-
 			if (player_bubble->has_halo)
 			{
 				render(app, bubble, Sprite::BubbleAngel);
 			}
 			if (player_bubble->has_dead_eyes)
 			{
-				render(app, bubble, Sprite::BubbleDead);
+				render(app, bubble, Sprite::BubbleDead, false);
 			}
 			if (player_bubble->has_ghost_eyes)
 			{
-				render(app, bubble, Sprite::BubbleGhostEyes);
+				render(app, bubble, Sprite::BubbleGhostEyes, false);
 			}
 			if (player_bubble->has_has_weird_mouth)
 			{
-				render(app, bubble, Sprite::BubbleWeirdMouth);
+				render(app, bubble, Sprite::BubbleWeirdMouth, false);
 			}
-
 			if (player_bubble->has_glasses)
 			{
 				render(app, bubble, Sprite::BubbleGlasses);

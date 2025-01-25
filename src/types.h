@@ -19,6 +19,8 @@ constexpr SDL_Color bubble_blue_bright = SDL_Color{ 198, 231, 228, 255 };
 constexpr SDL_Color bubble_blue = SDL_Color{ 129, 191, 183, 255 };
 constexpr SDL_Color bubble_blue_dark = SDL_Color{ 34, 81, 90, 255 };
 constexpr SDL_Color bubble_white = SDL_Color{ 214, 250, 249, 255 };
+constexpr SDL_Color bubble_white_bright = SDL_Color{ 255, 255, 255, 255 };
+
 
 struct SinglePlayer
 {
