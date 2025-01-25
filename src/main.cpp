@@ -1,9 +1,11 @@
+#include <SDL_mixer.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+
 #include <stdio.h>
 
-#include "Bouncee.h"
 #include "assets.h"
+#include "Bouncee.h"
 #include "core.h"
 typedef uint64_t milliseconds;
 
@@ -99,6 +101,16 @@ struct SinglePlayer
 
 	uint64_t base;
 	uint64_t multiplier;
+};
+
+struct SinglePlayerUI
+{
+	// Might not be temp
+	char buffer[16];
+
+	TTF_Text* score;
+	TTF_Text* base;
+	TTF_Text* multiplier;
 };
 
 struct Bubble
@@ -253,6 +265,11 @@ struct UpgradeBubble
 
 float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
+inline float get_legal_radius(Bubble* bubble)
+{
+	float legal_ratio = 1.0f - bubble->paddding_ratio;
+	return bubble->radius * legal_ratio;
+}
 
 inline void update(KeyboardDevice* keyboard_state)
 {
@@ -292,8 +309,7 @@ inline void update(MouseDevice* mouse_state)
 
 inline bool button_down(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
 {
-	ASSERT(frame_index < MOUSE_STATE_FRAME_COUNT,
-		"Cannot go that much back in time - Should we fallback to previous?");
+	ASSERT(frame_index < MOUSE_STATE_FRAME_COUNT, "Cannot go that much back in time - Should we fallback to previous?");
 
 	int button_mask = SDL_BUTTON_MASK(button_index);
 	const MouseState* state = &mouse_state->frames[frame_index];
@@ -453,17 +469,13 @@ void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 		MouseState const* state = &app->input.mouse.current;
 		float distance = math_distance(state->x, state->y, bubble->bubble.x, bubble->bubble.y);
 
-		float legal_ratop = 1.0f - bubble->bubble.paddding_ratio;
-		//bubble->bubble.radius *= get_wobble(app->now);
-
-		if (distance < bubble->bubble.radius * legal_ratop)
+		if (distance < get_legal_radius(&bubble->bubble))
 		{
 			bubble->bubble.color = bubble_blue;
 
 			if (is_player_clicking)
 			{
 				player->current_money = player->current_money + (player->base * player->multiplier);
-				bubble->bubble.color = bubble_blue_dark;
 				bubble->bubble.time_since_clicked = app->now;
 			}
 		}
@@ -492,7 +504,7 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 			continue;
 		}
 
-		if (distance < bubble->bubble.radius)
+		if (distance < get_legal_radius(&bubble->bubble))
 		{
 			bubble->bubble.color = bubble_blue;
 
@@ -501,7 +513,6 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 				player->current_money = player->current_money - bubble->inc.cost;
 				bubble->inc.amount = bubble->inc.amount + 1;
 				bubble->bubble.time_since_clicked = app->now;
-				bubble->bubble.color = bubble_blue_dark;
 			}
 		}
 		else
@@ -529,7 +540,7 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 			continue;
 		}
 
-		if (distance < bubble->bubble.radius)
+		if (distance < get_legal_radius(&bubble->bubble))
 		{
 			bubble->bubble.color = bubble_blue;
 
@@ -540,7 +551,6 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 				player->multiplier = player->multiplier + bubble->inc.multiplier_bonus;
 
 				bubble->bubble.time_since_clicked = app->now;
-				bubble->bubble.color = bubble_blue_dark;
 			}
 		}
 		else
@@ -548,6 +558,11 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 			bubble->bubble.color = bubble_blue_bright;
 		}
 	}
+}
+
+void update(App* app, SinglePlayer* player, SinglePlayerUI* ui)
+{
+
 }
 
 
@@ -576,6 +591,16 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 	for (size_t index = 0; index < count; index++)
 	{
 		const Bubble* bubble = &bubbles[index].bubble;
+		{
+			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+			float w, h;
+			SDL_GetTextureSize(texture, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+			SDL_FRect dst = SDL_FRect{ bubble->x, bubble->y, bubble->radius * 4.0f, bubble->radius * 4.0f };
+			dst.x -= bubble->radius * 2.0f;
+			dst.y -= bubble->radius * 2.0f;
+			SDL_RenderTexture(app->renderer, texture, &src, &dst);
+		}
 
 		SDL_Color c = bubble->color;
 
@@ -602,8 +627,13 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 			SDL_Color c = auto_bubble->color;
 			SDL_SetRenderDrawColor(app->renderer, c.r, c.g, c.b, c.a);
 
+			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+			float w, h;
+			SDL_GetTextureSize(texture, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 			SDL_FRect dst = SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
-			SDL_RenderRect(app->renderer, &dst);
+
+			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
 		{
@@ -632,11 +662,13 @@ void render(App* app, UpgradeBubble* bubbles, size_t count)
 		const Bubble* bubble = &auto_bubble->bubble;
 
 		{
-			SDL_Color c = auto_bubble->color;
-			SDL_SetRenderDrawColor(app->renderer, c.r, c.g, c.b, c.a);
-
+			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+			float w, h;
+			SDL_GetTextureSize(texture, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 			SDL_FRect dst = SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
-			SDL_RenderRect(app->renderer, &dst);
+
+			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
 		{
@@ -800,18 +832,17 @@ int main(int argc, char* argv[])
 
 	load_assets(app.renderer);
 
-	constexpr SDL_Color white = bubble_white;
-	TTF_Font* font = TTF_OpenFont("./assets/Cheeseburger.ttf", 48.0f);
+	constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
 	TTF_TextEngine* text_engine = TTF_CreateRendererTextEngine(app.renderer);
-	TTF_Text* text = TTF_CreateText(text_engine, font, "0000000", 0);
+	TTF_Text* text = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
 	TTF_SetTextColor(text, 255, 255, 255, 255);
-	TTF_SetTextWrapWidth(text, 64);
 	TTF_SetTextPosition(text, 16, 16);
-
 
 	SinglePlayer player{};
 	player.base = 1;
 	player.multiplier = 1;
+
+	SinglePlayerUI player_ui{};
 
 	// Only one bubble for now
 	constexpr size_t player_bubble_count = 1;
@@ -870,7 +901,7 @@ int main(int argc, char* argv[])
 		update(&app, particles, particle_count);
 
 		// Render
-		
+
 		SDL_SetRenderDrawColor(app.renderer, background_color.r, background_color.g, background_color.b,
 			background_color.a);
 
@@ -882,7 +913,8 @@ int main(int argc, char* argv[])
 
 		render(&app, &player);
 
-		if (!TTF_DrawRendererText(text, 64.0f, 64.0f)) {
+		if (!TTF_DrawRendererText(text, 64.0f, 64.0f))
+		{
 			SDL_Log(SDL_GetError());
 		};
 
@@ -890,6 +922,12 @@ int main(int argc, char* argv[])
 
 		post_render_update(&player);
 	}
+
+	destroy_assets();
+
+	TTF_DestroyRendererTextEngine(text_engine);
+
+	SDL_DestroyRenderer(app.renderer);
 
 	SDL_DestroyWindow(app.window);
 
