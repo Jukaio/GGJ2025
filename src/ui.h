@@ -9,6 +9,9 @@
 constexpr float UiTabWidthScale = 0.06;
 constexpr float UiTabHeightScale = 0.08;
 
+const SDL_Color btn_over_tint = {200, 200, 180};
+const SDL_Color btn_press_tint = {100, 100, 120};
+
 struct Button
 {
 	SDL_FRect rect;
@@ -45,7 +48,7 @@ const double UpgradeCosts[] =
 
 struct Upgrades
 {
-	bool owned_upgrades[(int)Upgrade::Count];
+	int owned_upgrades[(int)Upgrade::Count];
 };
 
 enum class Tab
@@ -75,18 +78,18 @@ bool button(SDL_Renderer* rend, const SDL_FRect* btn, const MouseDevice* m, Spri
 	SDL_FRect _;
 	bool overlap = SDL_GetRectIntersectionFloat(btn, &mouse_rect, &_);
 
-	SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+	SDL_Texture* texture = tex[(uint64_t)sprite];
 	float w, h;
 	SDL_GetTextureSize(texture, &w, &h);
 	SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 
 	if (overlap && button_down(m, 1))
 	{
-		SDL_SetTextureColorModFloat(texture, 0.5f, 0.5f, 0.5f);
+		SDL_SetTextureColorMod(texture, btn_press_tint.r, btn_press_tint.g, btn_press_tint.b);
 	}
 	else if (overlap)
 	{
-		SDL_SetTextureColorModFloat(texture, 0.7f, 0.7f, 0.7f);
+		SDL_SetTextureColorMod(texture, btn_over_tint.r, btn_over_tint.g, btn_over_tint.b);
 	}
 
 	SDL_RenderTexture(rend, texture, &src, btn);
@@ -134,13 +137,25 @@ void draw_upgrades_tab(const App* app, UiTab* tab, const SDL_FRect* canvas)
 	bg.x = off;
 	bg.y = off / 4.0f;
 
-	SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+	SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI2];
 	float w, h;
 	SDL_GetTextureSize(texture, &w, &h);
 	SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 	SDL_RenderTexture(app->renderer, texture, &src, &bg);
 
+	for (int i = 0; i < (int)Upgrade::Count; ++i)
+	{
+		SDL_FRect btn;
+		btn.x = bg.x + bg.w * 0.1 + (i>3) * bg.w * 0.4;
+		btn.y = bg.y + bg.h * 0.1 + ((i&0b11) * bg.h * 0.2);
+		btn.w = bg.w * 0.1;
+		btn.h = bg.w * 0.1;
 
+		if (button(app->renderer, &btn, &app->input.mouse, Sprite::BoxUI2))
+		{
+			app->upgrades->owned_upgrades[i] += 1;
+		}
+	}
 
 }
 
