@@ -56,12 +56,9 @@ struct Bubble
 
 	uint32_t consecutive_clicks;
 
-	SDL_Color color;
-};
+	uint32_t burst_cap;
 
-enum BubbleAnimationMode
-{
-	BubbleAnimationModeOnce
+	SDL_Color color;
 };
 
 enum BubbleAnimationState
@@ -75,7 +72,6 @@ struct BubbleAnimation
 {
 	Sprite sprites[16];
 
-	BubbleAnimationMode mode;
 	BubbleAnimationState state;
 
 	float accumulator;
@@ -410,7 +406,10 @@ void update(const App* app,
 			if (is_player_clicking)
 			{
 				player_bubble->bubble.consecutive_clicks = player_bubble->bubble.consecutive_clicks + 1;
-
+				if (player_bubble->bubble.consecutive_clicks > player_bubble->bubble.burst_cap)
+				{
+					animation_start(&player_bubble->pop_animation);
+				}
 				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
 				if (*particle_count + total_emit_count > particle_capacity)
 				{
@@ -459,6 +458,8 @@ void animation_create(BubbleAnimation* animation, float duration, size_t sprite_
 		animation_add(animation, sprite);
 	}
 	va_end(argp);
+
+	animation->duration = duration;
 }
 
 void animation_start(BubbleAnimation* animation)
@@ -684,8 +685,10 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
-		PlayerBubble* player_bubble = &bubbles[index];
+		const PlayerBubble* player_bubble = &bubbles[index];
 		const Bubble* bubble = &player_bubble->bubble;
+
+
 		{
 			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
 			float w, h;
@@ -697,69 +700,68 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
-		uint64_t base_mask = 0b11 & player_bubble->archetype;
-		if (base_mask == 0)
+		if (!animation_render(app, &player_bubble->pop_animation, &player_bubble->bubble))
 		{
-			render(app, bubble, Sprite::BubbleBase);
-		}
+			uint64_t base_mask = 0b11 & player_bubble->archetype;
+			if (base_mask == 0)
+			{
+				render(app, bubble, Sprite::BubbleBase);
+			}
 
-		else if (player_bubble->is_cat && player_bubble->is_ghost)
-		{
-			render(app, bubble, Sprite::BubbleGhostCat);
-		}
-		else if (player_bubble->is_cat)
-		{
-			render(app, bubble, Sprite::BubbleKot);
-		}
-		else if (player_bubble->is_ghost)
-		{
-			render(app, bubble, Sprite::BubbleGhost);
-		}
+			else if (player_bubble->is_cat && player_bubble->is_ghost)
+			{
+				render(app, bubble, Sprite::BubbleGhostCat);
+			}
+			else if (player_bubble->is_cat)
+			{
+				render(app, bubble, Sprite::BubbleKot);
+			}
+			else if (player_bubble->is_ghost)
+			{
+				render(app, bubble, Sprite::BubbleGhost);
+			}
 
-		if (player_bubble->has_halo)
-		{
-			render(app, bubble, Sprite::BubbleAngel);
-		}
-		if (player_bubble->has_dead_eyes)
-		{
-			render(app, bubble, Sprite::BubbleDead);
-		}
-		if (player_bubble->has_ghost_eyes)
-		{
-			render(app, bubble, Sprite::BubbleGhostEyes);
-		}
-		if (player_bubble->has_has_weird_mouth)
-		{
-			render(app, bubble, Sprite::BubbleWeirdMouth);
-		}
+			if (player_bubble->has_halo)
+			{
+				render(app, bubble, Sprite::BubbleAngel);
+			}
+			if (player_bubble->has_dead_eyes)
+			{
+				render(app, bubble, Sprite::BubbleDead);
+			}
+			if (player_bubble->has_ghost_eyes)
+			{
+				render(app, bubble, Sprite::BubbleGhostEyes);
+			}
+			if (player_bubble->has_has_weird_mouth)
+			{
+				render(app, bubble, Sprite::BubbleWeirdMouth);
+			}
 
-		if (player_bubble->has_glasses)
-		{
-			render(app, bubble, Sprite::BubbleGlasses);
-		}
-		if (player_bubble->has_sun_glasses)
-		{
-			render(app, bubble, Sprite::BubbleSunglasses);
-		}
-		if (player_bubble->has_devil_horns)
-		{
-			render(app, bubble, Sprite::BubbleDevil);
-		}
-		if (player_bubble->has_bow)
-		{
-			render(app, bubble, Sprite::BubbleBow);
-		}
-		if (player_bubble->has_tie)
-		{
-			render(app, bubble, Sprite::BubblesTie);
-		}
-		if (player_bubble->has_has_glare)
-		{
-			render(app, bubble, Sprite::BubbleGlare);
-		}
-
-		if (!animation_render(app, &player_bubble->pop_animation, &player_bubble->bubble)) {
-			animation_start(&player_bubble->pop_animation);
+			if (player_bubble->has_glasses)
+			{
+				render(app, bubble, Sprite::BubbleGlasses);
+			}
+			if (player_bubble->has_sun_glasses)
+			{
+				render(app, bubble, Sprite::BubbleSunglasses);
+			}
+			if (player_bubble->has_devil_horns)
+			{
+				render(app, bubble, Sprite::BubbleDevil);
+			}
+			if (player_bubble->has_bow)
+			{
+				render(app, bubble, Sprite::BubbleBow);
+			}
+			if (player_bubble->has_tie)
+			{
+				render(app, bubble, Sprite::BubblesTie);
+			}
+			if (player_bubble->has_has_glare)
+			{
+				render(app, bubble, Sprite::BubbleGlare);
+			}
 		}
 	}
 }
@@ -852,7 +854,7 @@ void setup(PlayerBubble* player_bubbles, size_t count)
 {
 	SDL_assert(count == 1 && "We only handle one player bubble for now");
 
-	animation_create(&player_bubbles->pop_animation, 5.0f, 11, Sprite::BubblePop1, Sprite::BubblePop2,
+	animation_create(&player_bubbles->pop_animation, 0.5f, 11, Sprite::BubblePop1, Sprite::BubblePop2,
 		Sprite::BubblePop3, Sprite::BubblePop4, Sprite::BubblePop5, Sprite::BubblePop6, Sprite::BubblePop7,
 		Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11);
 
@@ -862,7 +864,7 @@ void setup(PlayerBubble* player_bubbles, size_t count)
 	player_bubbles->bubble.paddding_ratio = 0.32f;
 	player_bubbles->bubble.click_scale = bubble_click_scale;
 	player_bubbles->bubble.duration_click = bubble_click_duration;
-
+	player_bubbles->bubble.burst_cap = 32;
 	print(player_bubbles);
 }
 
@@ -1021,10 +1023,9 @@ int main(int argc, char* argv[])
 	setup(auto_bubbles, auto_bubble_count);
 	setup(upgrade_bubbles, upgrade_bubble_count);
 
-	bool is_running = true;
-
 	update(&app, &player, &player_ui, true);
 
+	bool is_running = true;
 	milliseconds tp = SDL_GetTicks();
 	while (is_running)
 	{
