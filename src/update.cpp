@@ -298,7 +298,7 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 
 			if (is_player_clicking)
 			{
-				Mix_PlayChannel(-1, sounds[(u64)Audio::MildPop], 0);
+				play(Audio::MildPop);
 
 				player->current_money = player->current_money - bubble->inc.cost;
 				player->current_base = player->current_base + bubble->inc.base_bonus;
