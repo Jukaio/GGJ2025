@@ -1,13 +1,12 @@
 #pragma once
 
-#include <SDL_mixer.h>
+#include <SDL3_mixer/SDL_mixer.h>
 #include <SDL3/SDL.h>
 
 #include "Bouncee.h"
 #include "core.h"
 #include <stdio.h>
 #include <stdlib.h>
-
 
 typedef uint64_t milliseconds;
 

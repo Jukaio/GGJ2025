@@ -21,7 +21,7 @@ void fixed_update(struct App* app, struct SinglePlayer* player, struct AutoBubbl
 void post_render_update(struct SinglePlayer* player);
 void post_render_update(struct App* app, struct SinglePlayer* player, struct SinglePlayerUI* ui, bool force = false);
 
-void render(struct App* app, const struct Bubble* bubble, Sprite sprite, float offset_x = 0.0f, float offset_y = 0.0f, bool recolor = true);
+void render(struct App* app, const struct Bubble* bubble, Sprite sprite, float offset_x = 0.0f, float offset_y = 0.0f);
 void render(struct App* app, struct PlayerBubble* bubbles, size_t count);
 void render(struct App* app, struct AutoBubble* bubbles, size_t count);
 void render(struct App* app, struct Particle* particles, size_t count);

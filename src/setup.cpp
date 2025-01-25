@@ -5,7 +5,6 @@
 constexpr float bubble_click_duration = 0.25f;
 constexpr float bubble_click_scale = 0.60f;
 
-
 void setup(App* app, PlayerBubble* player_bubbles, size_t count)
 {
 	int window_width, window_height;
