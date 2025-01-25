@@ -59,10 +59,27 @@ struct Bubble
 	SDL_Color color;
 };
 
+enum BubbleAnimationMode
+{
+	BubbleAnimationModeOnce
+};
+
+enum BubbleAnimationState
+{
+	BubbleAnimationStateStop,
+	BubbleAnimationStatePlaying,
+};
+
+
 struct BubbleAnimation
 {
 	Sprite sprites[16];
-	Sprite current;
+
+	BubbleAnimationMode mode;
+	BubbleAnimationState state;
+
+	float accumulator;
+	float duration;
 
 	uint8_t count;
 };
@@ -78,6 +95,8 @@ enum PlayerBubbleBase : uint8_t
 struct PlayerBubble
 {
 	Bubble bubble;
+
+	BubbleAnimation pop_animation;
 
 	union
 	{
@@ -212,11 +231,7 @@ struct UpgradeBubble
 };
 
 float lerp(float a, float b, float t) { return a + (b - a) * t; }
-//
-// void animation_add(BubbleAnimation* animation, )
-//{
-//
-//}
+
 
 inline float get_legal_radius(Bubble* bubble)
 {
@@ -292,6 +307,24 @@ SDL_FRect get_frect(const App* app, const Bubble* bubble)
 	float half = bubble->radius * scale;
 	float size = half * 2;
 	return SDL_FRect{ bubble->x - half, bubble->y - half, size, size };
+}
+
+void render(App* app, const Bubble* bubble, Sprite sprite, float offset_x = 0.0f, float offset_y = 0.0f)
+{
+	SDL_Color c = bubble->color;
+
+	SDL_Texture* texture = tex[(uint64_t)sprite];
+	SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+	SDL_SetTextureAlphaMod(texture, c.a);
+
+	float w, h;
+	SDL_GetTextureSize(texture, &w, &h);
+	SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+
+	SDL_FRect dst = get_frect(app, bubble);
+	dst.x = dst.x + offset_x;
+	dst.y = dst.y + offset_y;
+	SDL_RenderTexture(app->renderer, texture, &src, &dst);
 }
 
 float get_wobble(float dt)
@@ -407,8 +440,75 @@ void update(const App* app,
 	}
 }
 
+void animation_add(BubbleAnimation* animation, Sprite sprite)
+{
+	animation->sprites[animation->count] = sprite;
+	animation->count = animation->count + 1;
+}
+
+void animation_create(BubbleAnimation* animation, float duration, size_t sprite_count, ...)
+{
+	ASSERT(animation != nullptr, "Animation must not be nullptr");
+	SDL_zerop(animation);
+
+	va_list argp;
+	va_start(argp, sprite_count);
+	for (int i = 0; i < sprite_count; i++)
+	{
+		Sprite sprite = va_arg(argp, Sprite);
+		animation_add(animation, sprite);
+	}
+	va_end(argp);
+}
+
+void animation_start(BubbleAnimation* animation)
+{
+	animation->state = BubbleAnimationStatePlaying;
+	animation->accumulator = 0.0f;
+}
+
+
+bool animation_try_get_current(const BubbleAnimation* animation, Sprite* sprite)
+{
+	if (animation->count == 0)
+	{
+		return false;
+	}
+	float normalised_time = animation->accumulator / animation->duration;
+	uint32_t current = (uint32_t)SDL_clamp(normalised_time * animation->count, 0, animation->count - 1);
+	*sprite = animation->sprites[current];
+	return true;
+}
+
+void animation_update(App* app, BubbleAnimation* animation)
+{
+	if (animation->accumulator > animation->duration)
+	{
+		animation->state = BubbleAnimationStateStop;
+		return;
+	}
+	animation->accumulator = animation->accumulator + app->delta_time;
+}
+
+bool animation_render(App* app, const BubbleAnimation* animation, const Bubble* bubble)
+{
+	Sprite sprite;
+	if (animation->state == BubbleAnimationStatePlaying && animation_try_get_current(animation, &sprite))
+	{
+		render(app, bubble, sprite);
+		return true;
+	}
+	return false;
+}
+
 void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t count)
 {
+	for (size_t index = 0; index < count; index++)
+	{
+		PlayerBubble* bubble = &player_bubbles[index];
+		animation_update(app, &bubble->pop_animation);
+	}
+
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 	{
 		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
@@ -580,29 +680,11 @@ void post_render_update(SinglePlayer* player)
 	player->previous_multiplier = player->current_multiplier;
 }
 
-void render(App* app, const Bubble* bubble, Sprite sprite, float offset_x = 0.0f, float offset_y = 0.0f)
-{
-	SDL_Color c = bubble->color;
-
-	SDL_Texture* texture = tex[(uint64_t)sprite];
-	SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
-	SDL_SetTextureAlphaMod(texture, c.a);
-
-	float w, h;
-	SDL_GetTextureSize(texture, &w, &h);
-	SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-
-	SDL_FRect dst = get_frect(app, bubble);
-	dst.x = dst.x + offset_x;
-	dst.y = dst.y + offset_y;
-	SDL_RenderTexture(app->renderer, texture, &src, &dst);
-}
-
 void render(App* app, PlayerBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
-		const PlayerBubble* player_bubble = &bubbles[index];
+		PlayerBubble* player_bubble = &bubbles[index];
 		const Bubble* bubble = &player_bubble->bubble;
 		{
 			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
@@ -674,6 +756,10 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 		if (player_bubble->has_has_glare)
 		{
 			render(app, bubble, Sprite::BubbleGlare);
+		}
+
+		if (!animation_render(app, &player_bubble->pop_animation, &player_bubble->bubble)) {
+			animation_start(&player_bubble->pop_animation);
 		}
 	}
 }
@@ -751,6 +837,7 @@ void render(App* app, SinglePlayerUI* ui)
 	};
 }
 
+
 constexpr int window_width = 1920;
 constexpr int window_height = 1080;
 
@@ -764,6 +851,10 @@ constexpr float bubble_click_scale = 0.60f;
 void setup(PlayerBubble* player_bubbles, size_t count)
 {
 	SDL_assert(count == 1 && "We only handle one player bubble for now");
+
+	animation_create(&player_bubbles->pop_animation, 5.0f, 11, Sprite::BubblePop1, Sprite::BubblePop2,
+		Sprite::BubblePop3, Sprite::BubblePop4, Sprite::BubblePop5, Sprite::BubblePop6, Sprite::BubblePop7,
+		Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11);
 
 	player_bubbles->bubble.x = window_width_half;
 	player_bubbles->bubble.y = window_height_half;
