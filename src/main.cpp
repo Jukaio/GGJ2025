@@ -417,12 +417,14 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 {
 	for (int i = 0; i < count; ++i)
 	{
-		float angle = static_cast<float>(rand()) / RAND_MAX * 2.0f * PI;
-		float speed = static_cast<float>(rand()) / RAND_MAX * 100.0f + 50.0f;
+		float angle = (float)(rand()) / RAND_MAX * 2.0f * PI;
+		float speed = (float)(rand()) / RAND_MAX * 220.0f + 125.0f;
+		float radius = (float)(rand()) / RAND_MAX * 48 + 8.0f;
 
 		Particle* particle = &particles[i];
 		particle->bubble.x = (float)x;
 		particle->bubble.y = (float)y;
+		particle->bubble.radius = radius;
 		particle->vx = cosf(angle) * speed;
 		particle->vy = sinf(angle) * speed;
 		particle->lifetime = 1.0f;
@@ -430,29 +432,47 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 	}
 }
 
-void update(const App* app, Particle* particles, int count)
+void update(const App* app, Particle* particles, size_t* count, size_t capacity)
 {
-	static u64 last_emit_time = 0;
-	const Uint32 emit_cooldown = 10; // Cooldown in milliseconds
-
-	bool can_emit = (app->delta_time - last_emit_time) >= emit_cooldown;
-
-	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
-	//if (can_emit)
-	{
-		if (is_player_clicking)
-		{
-			emit_particles(app, particles, 100, 100, bubble_blue_bright, 10);
-			last_emit_time = app->delta_time;
-		}
-	}
-
-	for (int i = 0; i < count; ++i)
+	for (int i = 0; i < *count; ++i)
 	{
 		Particle* particle = &particles[i];
 		particle->bubble.x += particle->vx * app->delta_time;
 		particle->bubble.y += particle->vy * app->delta_time;
 		particle->lifetime -= app->delta_time;
+	}
+
+	const uint32_t emit_cooldown = 10; // Cooldown in milliseconds
+	const uint32_t emit_count = 12;
+	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+	{
+		if (is_player_clicking)
+		{
+			float mx = app->input.mouse.current.x;
+			float my = app->input.mouse.current.y;
+			if (*count + emit_count > capacity) {
+				uint32_t difference = capacity - *count;
+				emit_particles(app, particles + difference, mx, my, bubble_blue_bright, difference);
+				*count = capacity;
+			}
+			else {
+				emit_particles(app, particles + *count, mx, my, bubble_blue_bright, emit_count);
+				*count = *count + emit_count;
+			}
+		}
+	}
+
+	for (int i = 0; i < *count; ++i)
+	{
+		Particle* particle = &particles[i];
+		if (particle->lifetime < 0.0f)
+		{
+			// Remove swap back
+			particles[i] = particles[*count - 1];
+			*count = *count - 1;
+			// Repeat current
+			i--;
+		}
 	}
 }
 
@@ -769,18 +789,7 @@ void render(App* app, Particle* particles, size_t count)
 		const Particle* particle = &particles[index];
 		const Bubble* bubble = &particle->bubble;
 
-		{
-			SDL_Color c = bubble->color;
-			SDL_SetRenderDrawColor(app->renderer, c.r, c.g, c.b, c.a);
-
-			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
-			float w, h;
-			SDL_GetTextureSize(texture, &w, &h);
-			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_FRect dst = SDL_FRect{ particle->bubble.x, particle->bubble.y, particle->bubble.radius, particle->bubble.radius };
-
-			SDL_RenderTexture(app->renderer, texture, &src, &dst);
-		}
+		render(app, bubble, Sprite::BubbleKot);
 	}
 }
 
@@ -995,8 +1004,9 @@ int main(int argc, char* argv[])
 	constexpr size_t upgrade_bubble_count = 4;
 	UpgradeBubble upgrade_bubbles[upgrade_bubble_count]{};
 
-	constexpr size_t particle_count = 100;
-	Particle particles[particle_count]{};
+	constexpr size_t particle_capacity = 100;
+	size_t particle_count = 0;
+	Particle particles[particle_capacity]{};
 
 	setup(player_bubbles, player_bubble_count);
 	setup(auto_bubbles, auto_bubble_count);
@@ -1039,7 +1049,7 @@ int main(int argc, char* argv[])
 		update(&app, &player, player_bubbles, player_bubble_count);
 		update(&app, &player, auto_bubbles, auto_bubble_count);
 		update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
-		update(&app, particles, particle_count);
+		update(&app, particles, &particle_count, particle_capacity);
 		update(&app, &player, &player_ui);
 
 		// Render
