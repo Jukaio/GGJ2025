@@ -10,7 +10,11 @@ void platform_init();
 void platform_destroy();
 void message_box(const char* title, const char* body);
 
-
+struct AssetRef
+{
+    u64 offset;
+    u64 size;
+};
 
 #define ASSERT(condition, msg)                                                  \
     do {                                                                        \

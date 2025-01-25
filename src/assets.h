@@ -61,7 +61,6 @@ inline int load_assets_from_gen(void* data)
 
 	SDL_free(in_data);
 
-
 	return 0;
 }
 
