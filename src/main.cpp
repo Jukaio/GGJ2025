@@ -720,6 +720,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	app.renderer = SDL_CreateRenderer(app.window, nullptr);
+	SDL_SetRenderVSync(app.renderer, 1);
 	if (app.renderer == nullptr)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
