@@ -310,12 +310,15 @@ SDL_FRect get_frect(const App* app, const Bubble* bubble)
 	return SDL_FRect{ bubble->x - half, bubble->y - half, size, size };
 }
 
-void render(App* app, const Bubble* bubble, Sprite sprite, float offset_x = 0.0f, float offset_y = 0.0f)
+void render(App* app, const Bubble* bubble, Sprite sprite, bool recolor = true, float offset_x = 0.0f, float offset_y = 0.0f)
 {
 	SDL_Color c = bubble->color;
 
 	SDL_Texture* texture = tex[(uint64_t)sprite];
-	SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+	if (recolor)
+	{
+		SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+	}
 	SDL_SetTextureAlphaMod(texture, c.a);
 
 	float w, h;
@@ -775,7 +778,7 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 
 			if (player_bubble->has_halo)
 			{
-				render(app, bubble, Sprite::BubbleAngel);
+				render(app, bubble, Sprite::BubbleAngel, false);
 			}
 			if (player_bubble->has_dead_eyes)
 			{
@@ -792,27 +795,27 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 
 			if (player_bubble->has_glasses)
 			{
-				render(app, bubble, Sprite::BubbleGlasses);
+				render(app, bubble, Sprite::BubbleGlasses, false);
 			}
 			if (player_bubble->has_sun_glasses)
 			{
-				render(app, bubble, Sprite::BubbleSunglasses);
+				render(app, bubble, Sprite::BubbleSunglasses, false);
 			}
 			if (player_bubble->has_devil_horns)
 			{
-				render(app, bubble, Sprite::BubbleDevil);
+				render(app, bubble, Sprite::BubbleDevil, false);
 			}
 			if (player_bubble->has_bow)
 			{
-				render(app, bubble, Sprite::BubbleBow);
+				render(app, bubble, Sprite::BubbleBow, false);
 			}
 			if (player_bubble->has_tie)
 			{
-				render(app, bubble, Sprite::BubblesTie);
+				render(app, bubble, Sprite::BubblesTie,false);
 			}
 			if (player_bubble->has_has_glare)
 			{
-				render(app, bubble, Sprite::BubbleGlare);
+				render(app, bubble, Sprite::BubbleGlare,false);
 			}
 		}
 	}
