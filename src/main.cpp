@@ -1,14 +1,12 @@
 #include <SDL_mixer.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-
 #include <stdio.h>
 
 #include "assets.h"
 #include "Bouncee.h"
 #include "core.h"
 typedef uint64_t milliseconds;
-
 
 
 constexpr SDL_Color background_color = SDL_Color{ 129, 191, 183, 255 };
@@ -99,14 +97,17 @@ struct SinglePlayer
 	uint64_t previous_money;
 	uint64_t current_money;
 
-	uint64_t base;
-	uint64_t multiplier;
+	uint64_t previous_base;
+	uint64_t current_base;
+
+	uint64_t previous_multiplier;
+	uint64_t current_multiplier;
 };
 
 struct SinglePlayerUI
 {
 	// Might not be temp
-	char buffer[16];
+	char buffer[64];
 
 	TTF_Text* score;
 	TTF_Text* base;
@@ -206,7 +207,8 @@ struct PlayerBubble
 	};
 };
 
-struct Particle {
+struct Particle
+{
 	float x, y;
 	float vx, vy;
 	float lifetime;
@@ -403,8 +405,10 @@ float get_wobble(float dt)
 	return scale;
 }
 
-void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color color, int count) {
-	for (int i = 0; i < count; ++i) {
+void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color color, int count)
+{
+	for (int i = 0; i < count; ++i)
+	{
 		float angle = static_cast<float>(rand()) / RAND_MAX * 2.0f * PI;
 		float speed = static_cast<float>(rand()) / RAND_MAX * 100.0f + 50.0f;
 
@@ -418,7 +422,8 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 	}
 }
 
-void update(const App* app, Particle* particles, int count) {
+void update(const App* app, Particle* particles, int count)
+{
 
 	static u64 last_emit_time = 0;
 	const Uint32 emit_cooldown = 500; // Cooldown in milliseconds
@@ -427,18 +432,22 @@ void update(const App* app, Particle* particles, int count) {
 	bool can_emit = (current_time - last_emit_time) >= emit_cooldown;
 
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
-	if (can_emit) {
+	if (can_emit)
+	{
 		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
 		SDL_Scancode scancode_end = SDL_SCANCODE_9;
-		for (int current = scancode_begin; current <= scancode_end; current++) {
-			if (key_just_down(&app->input.keyboard, (SDL_Scancode)current)) {
+		for (uint32_t current = scancode_begin; current <= scancode_end; current++)
+		{
+			if (key_just_down(&app->input.keyboard, SDL_Scancode(current)))
+			{
 				emit_particles(app, particles, 100, 100, bubble_blue_bright, 10);
 				last_emit_time = current_time;
 			}
 		}
 	}
 
-	for (int i = 0; i < count; ++i) {
+	for (int i = 0; i < count; ++i)
+	{
 		Particle* particle = &particles[i];
 		particle->x += particle->vx * app->delta_time;
 		particle->y += particle->vy * app->delta_time;
@@ -457,7 +466,7 @@ void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 			if (key_just_down(&app->input.keyboard, (SDL_Scancode)current))
 			{
 				uint64_t multiplier = current - scancode_begin + 1;
-				player->multiplier = multiplier;
+				player->current_multiplier = multiplier;
 			}
 		}
 	}
@@ -475,7 +484,7 @@ void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 
 			if (is_player_clicking)
 			{
-				player->current_money = player->current_money + (player->base * player->multiplier);
+				player->current_money = player->current_money + (player->current_base * player->current_multiplier);
 				bubble->bubble.time_since_clicked = app->now;
 			}
 		}
@@ -547,8 +556,8 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 			if (is_player_clicking)
 			{
 				player->current_money = player->current_money - bubble->inc.cost;
-				player->base = player->base + bubble->inc.base_bonus;
-				player->multiplier = player->multiplier + bubble->inc.multiplier_bonus;
+				player->current_base = player->current_base + bubble->inc.base_bonus;
+				player->current_multiplier = player->current_multiplier + bubble->inc.multiplier_bonus;
 
 				bubble->bubble.time_since_clicked = app->now;
 			}
@@ -560,9 +569,32 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 	}
 }
 
-void update(App* app, SinglePlayer* player, SinglePlayerUI* ui)
+void update(App* app, SinglePlayer* player, SinglePlayerUI* ui, bool force = false)
 {
-
+	if (force || player->previous_money != player->current_money)
+	{
+		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "Money: %llu", player->current_money);
+		if (length >= 0)
+		{
+			TTF_SetTextString(ui->score, ui->buffer, length);
+		}
+	}
+	if (force || player->previous_base != player->current_base)
+	{
+		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "Base: %llu", player->current_base);
+		if (length >= 0)
+		{
+			TTF_SetTextString(ui->base, ui->buffer, length);
+		}
+	}
+	if (force || player->previous_multiplier != player->current_multiplier)
+	{
+		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "Multiplier: %llu", player->current_multiplier);
+		if (length >= 0)
+		{
+			TTF_SetTextString(ui->multiplier, ui->buffer, length);
+		}
+	}
 }
 
 
@@ -584,7 +616,12 @@ void fixed_update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t co
 	}
 }
 
-void post_render_update(SinglePlayer* player) { player->previous_money = player->current_money; }
+void post_render_update(SinglePlayer* player)
+{
+	player->previous_money = player->current_money;
+	player->previous_base = player->current_base;
+	player->previous_multiplier = player->current_multiplier;
+}
 
 void render(App* app, PlayerBubble* bubbles, size_t count)
 {
@@ -690,12 +727,20 @@ void render(App* app, UpgradeBubble* bubbles, size_t count)
 }
 
 
-void render(App* app, SinglePlayer* player)
+void render(App* app, SinglePlayerUI* ui)
 {
-	if (player->previous_money != player->current_money)
+	if (!TTF_DrawRendererText(ui->score, 64.0f, 64.0f))
 	{
-		SDL_Log("Player Score: %llu", player->current_money);
-	}
+		SDL_Log(SDL_GetError());
+	};
+	if (!TTF_DrawRendererText(ui->base, 64.0f, 128.0f))
+	{
+		SDL_Log(SDL_GetError());
+	};
+	if (!TTF_DrawRendererText(ui->multiplier, 64.0f, 192.0f))
+	{
+		SDL_Log(SDL_GetError());
+	};
 }
 
 
@@ -797,6 +842,8 @@ void setup(UpgradeBubble* upgrade_bubbles, size_t auto_bubble_count)
 		bubble->click_scale = bubble_click_scale;
 		bubble->duration_click = bubble_click_duration;
 
+		upgrade_bubble->inc = config;
+
 		SDL_Log("");
 	}
 }
@@ -815,7 +862,7 @@ int main(int argc, char* argv[])
 
 
 	App app{};
-	app.tick_frequency = 1.0f;
+	app.tick_frequency = 0.25f;
 	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
 	if (app.window == nullptr)
 	{
@@ -834,15 +881,17 @@ int main(int argc, char* argv[])
 
 	constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
 	TTF_TextEngine* text_engine = TTF_CreateRendererTextEngine(app.renderer);
-	TTF_Text* text = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
-	TTF_SetTextColor(text, 255, 255, 255, 255);
-	TTF_SetTextPosition(text, 16, 16);
 
 	SinglePlayer player{};
-	player.base = 1;
-	player.multiplier = 1;
+	player.current_base = 1;
+	player.current_multiplier = 1;
 
 	SinglePlayerUI player_ui{};
+	player_ui.score = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
+	TTF_SetTextColor(player_ui.score, 255, 255, 255, 255);
+
+	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
+	player_ui.multiplier = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
 
 	// Only one bubble for now
 	constexpr size_t player_bubble_count = 1;
@@ -863,9 +912,9 @@ int main(int argc, char* argv[])
 
 	bool is_running = true;
 
-	// milliseconds current = SDL_GetTicks();
-	milliseconds tp = SDL_GetTicks();
+	update(&app, &player, &player_ui, true);
 
+	milliseconds tp = SDL_GetTicks();
 	while (is_running)
 	{
 		milliseconds now = SDL_GetTicks();
@@ -899,6 +948,7 @@ int main(int argc, char* argv[])
 		update(&app, &player, auto_bubbles, auto_bubble_count);
 		update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
 		update(&app, particles, particle_count);
+		update(&app, &player, &player_ui);
 
 		// Render
 
@@ -911,12 +961,7 @@ int main(int argc, char* argv[])
 		render(&app, upgrade_bubbles, upgrade_bubble_count);
 		render(&app, player_bubbles, player_bubble_count);
 
-		render(&app, &player);
-
-		if (!TTF_DrawRendererText(text, 64.0f, 64.0f))
-		{
-			SDL_Log(SDL_GetError());
-		};
+		render(&app, &player_ui);
 
 		SDL_RenderPresent(app.renderer);
 
