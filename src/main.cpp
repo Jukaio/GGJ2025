@@ -71,10 +71,14 @@ struct InputDevice
 struct App
 {
 	SDL_Window* window;
+	SDL_Renderer* renderer;
+
 	InputDevice input;
 
 	float tick_frequency;
 	float tick_accumulator;
+
+	float now;
 	float delta_time;
 };
 
@@ -93,6 +97,12 @@ struct Bubble
 	float y;
 
 	float radius;
+	float paddding_ratio;
+
+	float click_scale;
+
+	float duration_click;
+	float time_since_clicked;
 
 	SDL_Color color;
 };
@@ -273,6 +283,12 @@ struct AutoBubble
 	float height;
 };
 
+float lerp(float a, float b, float t)
+{
+	return a + (b - a) * t;
+}
+
+
 inline void update(KeyboardDevice* keyboard_state)
 {
 	int num_keys = 0;
@@ -387,10 +403,15 @@ SDL_Rect get_rect(const Bubble* bubble)
 	return SDL_Rect{ int(bubble->x) - half, int(bubble->y) - half, size, size };
 }
 
-SDL_FRect get_frect(const Bubble* bubble)
+SDL_FRect get_frect(const App* app, const Bubble* bubble)
 {
-	float half = bubble->radius;
-	float size = bubble->radius * 2;
+	float time_difference = app->now - bubble->time_since_clicked;
+	float frac = time_difference / bubble->duration_click;
+	frac = SDL_clamp(frac, 0.0f, 1.0f);
+
+	float scale = lerp(bubble->click_scale, 1.0f, frac);
+	float half = bubble->radius * scale;
+	float size = half * 2;
 	return SDL_FRect{ bubble->x - half, bubble->y - half, size, size };
 }
 
@@ -416,7 +437,9 @@ void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 
 		MouseState const* state = &app->input.mouse.current;
 		float distance = math_distance(state->x, state->y, bubble->bubble.x, bubble->bubble.y);
-		if (distance < bubble->bubble.radius)
+
+		float legal_ratop = 1.0f - bubble->bubble.paddding_ratio;
+		if (distance < bubble->bubble.radius * legal_ratop)
 		{
 			bubble->bubble.color = SDL_Color{ 255, 0, 0, 255 };
 
@@ -424,6 +447,7 @@ void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 			{
 				player->current_money = player->current_money + (player->base * player->multiplier);
 				bubble->bubble.color = SDL_Color{ 255, 255, 255, 255 };
+				bubble->bubble.time_since_clicked = app->now;
 			}
 		}
 		else
@@ -455,6 +479,7 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 				{
 					player->current_money = player->current_money - bubble->inc.cost;
 					bubble->inc.amount = bubble->inc.amount + 1;
+					bubble->bubble.time_since_clicked = app->now;
 				}
 				bubble->bubble.color = SDL_Color{ 255, 255, 255, 255 };
 			}
@@ -484,25 +509,29 @@ void fixed_update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t co
 	}
 }
 
-
 void post_render_update(SinglePlayer* player) { player->previous_money = player->current_money; }
 
-void render(SDL_Renderer* renderer, PlayerBubble* bubbles, size_t count)
+void render(App* app, PlayerBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
 		const Bubble* bubble = &bubbles[index].bubble;
 
 		SDL_Color c = bubble->color;
-		SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
 
-		SDL_FRect dst = get_frect(bubble);
+		SDL_Texture* texture = tex[(uint64_t)Sprite::TestBubble2];
+		float w, h;
+		SDL_GetTextureSize(texture, &w, &h);
+		SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 
-		SDL_RenderFillRect(renderer, &dst);
+		SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+
+		SDL_FRect dst = get_frect(app, bubble);
+		SDL_RenderTexture(app->renderer, texture, &src, &dst);
 	}
 }
 
-void render(SDL_Renderer* renderer, AutoBubble* bubbles, size_t count)
+void render(App* app, AutoBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
@@ -511,25 +540,31 @@ void render(SDL_Renderer* renderer, AutoBubble* bubbles, size_t count)
 
 		{
 			SDL_Color c = auto_bubble->color;
-			SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
+			SDL_SetRenderDrawColor(app->renderer, c.r, c.g, c.b, c.a);
 
 			SDL_FRect dst = SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
-			SDL_RenderFillRect(renderer, &dst);
+			SDL_RenderRect(app->renderer, &dst);
 		}
 
 		{
 			SDL_Color c = bubble->color;
-			SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
 
-			SDL_FRect dst = get_frect(bubble);
+			SDL_Texture* texture = tex[(uint64_t)Sprite::TestBubble2];
+			float w, h;
+			SDL_GetTextureSize(texture, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+
+			SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+
+			SDL_FRect dst = get_frect(app, bubble);
 			dst.x = dst.x + auto_bubble->x;
 			dst.y = dst.y + auto_bubble->y;
-			SDL_RenderFillRect(renderer, &dst);
+			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 	}
 }
 
-void render(SDL_Renderer* renderer, SinglePlayer* player)
+void render(App* app, SinglePlayer* player)
 {
 	if (player->previous_money != player->current_money)
 	{
@@ -540,10 +575,6 @@ void render(SDL_Renderer* renderer, SinglePlayer* player)
 int main(int argc, char* argv[])
 {
 	platform_init();
-
-
-	App app{};
-
 	SDL_Init(SDL_INIT_VIDEO);
 
 	if (!TTF_Init())
@@ -561,28 +592,43 @@ int main(int argc, char* argv[])
 	App app{};
 	app.tick_frequency = 1.0f;
 	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
-	if (app.window == NULL)
+	if (app.window == nullptr)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
-		return 1;
+		return -1;
 	}
+	app.renderer = SDL_CreateRenderer(app.window, nullptr);
+	if (app.renderer == nullptr) {
+		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
+		return -1;
+	}
+
+	load_assets(app.renderer);
 
 	SinglePlayer player{};
 	player.base = 1;
+	player.multiplier = 1;
+
+	constexpr float bubble_click_duration = 0.25f;
+	constexpr float bubble_click_scale = 0.60f;
 
 	// Only one bubble for now
 	constexpr size_t player_bubble_count = 1;
 	PlayerBubble player_bubbles[player_bubble_count];
 	player_bubbles->bubble.x = window_width_half;
 	player_bubbles->bubble.y = window_height_half;
-	player_bubbles->bubble.radius = 64.0f;
+	player_bubbles->bubble.radius = 256.0f;
+	player_bubbles->bubble.paddding_ratio = 0.32f;
+	player_bubbles->bubble.click_scale = bubble_click_scale;
+	player_bubbles->bubble.duration_click = bubble_click_duration;
+
 	print(player_bubbles);
 	SDL_Log("");
 
 	constexpr size_t auto_bubble_count = 9;
 	AutoBubble auto_bubbles[auto_bubble_count]{};
 
-	constexpr float radius = 32.0f;
+	constexpr float radius = 48.0f;
 	constexpr float width = 128.0f;
 	constexpr float height = 96.0f;
 	constexpr float origin_x = 32.0f;
@@ -612,13 +658,12 @@ int main(int argc, char* argv[])
 		config.gain = 1 + (index * 2);
 		auto_bubble->inc = config;
 
+		bubble->click_scale = bubble_click_scale;
+		bubble->duration_click = bubble_click_duration;
+
 		print(auto_bubble);
 		SDL_Log("");
 	}
-
-	SDL_Renderer* renderer = SDL_CreateRenderer(app.window, nullptr);
-
-	load_assets(renderer);
 
 	bool is_running = true;
 
@@ -643,7 +688,8 @@ int main(int argc, char* argv[])
 		// Input
 		update(&app.input);
 
-		// Update
+		// Fixed Update
+		app.now = now / 1000.0f;
 		app.delta_time = delta_time / 1000.0f;
 		app.tick_accumulator = app.tick_accumulator + app.delta_time;
 		while (app.tick_accumulator >= app.tick_frequency)
@@ -652,18 +698,20 @@ int main(int argc, char* argv[])
 			fixed_update(&app, &player, auto_bubbles, auto_bubble_count);
 		}
 
+		// Update
 		update(&app, &player, player_bubbles, player_bubble_count);
 		update(&app, &player, auto_bubbles, auto_bubble_count);
 
 		// Render
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+		SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 0);
 
-		SDL_RenderClear(renderer);
+		SDL_RenderClear(app.renderer);
 
-		render(renderer, player_bubbles, player_bubble_count);
-		render(renderer, auto_bubbles, auto_bubble_count);
-		render(renderer, &player);
-		SDL_RenderPresent(renderer);
+		render(&app, player_bubbles, player_bubble_count);
+		render(&app, auto_bubbles, auto_bubble_count);
+		render(&app, &player);
+
+		SDL_RenderPresent(app.renderer);
 
 		post_render_update(&player);
 	}
