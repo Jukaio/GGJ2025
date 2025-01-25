@@ -10,7 +10,6 @@
 #include "ui.h"
 typedef uint64_t milliseconds;
 
-
 constexpr SDL_Color background_color = SDL_Color{ 129, 191, 183, 255 };
 constexpr SDL_Color bubble_pink_bright = SDL_Color{ 255, 212, 222, 255 };
 constexpr SDL_Color bubble_pink = SDL_Color{ 243, 162, 190, 255 };
@@ -19,7 +18,6 @@ constexpr SDL_Color bubble_blue_bright = SDL_Color{ 198, 231, 228, 255 };
 constexpr SDL_Color bubble_blue = SDL_Color{ 129, 191, 183, 255 };
 constexpr SDL_Color bubble_blue_dark = SDL_Color{ 34, 81, 90, 255 };
 constexpr SDL_Color bubble_white = SDL_Color{ 214, 250, 249, 255 };
-
 
 struct SinglePlayer
 {
@@ -151,6 +149,7 @@ struct Particle
 	float vx;
 	float vy;
 	float lifetime;
+	Sprite sprite;
 };
 
 struct AutoBubbleIncremental
@@ -294,7 +293,7 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 	{
 		float angle = (float)(rand()) / RAND_MAX * 2.0f * PI;
 		float speed = (float)(rand()) / RAND_MAX * 220.0f + 125.0f;
-		float radius = (float)(rand()) / RAND_MAX * 48 + 8.0f;
+		float radius = (float)(rand()) / RAND_MAX * 30 + 8.0f;
 
 		Particle* particle = &particles[i];
 		particle->bubble.x = (float)x;
@@ -304,6 +303,26 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 		particle->vy = sinf(angle) * speed;
 		particle->lifetime = 1.0f;
 		particle->bubble.color = color;
+
+		int num = (rand() % 10 + 1);
+		switch (num)
+		{
+		case 1:
+			particle->sprite = Sprite::ParticleKot;
+			break;
+		case 2:
+			particle->sprite = Sprite::ParticleGhost;
+			break;
+		case 3:
+			particle->sprite = Sprite::ParticleGhostCat;
+			break;
+		case 4:
+			particle->sprite = Sprite::ParticleClick;
+			break;
+		default:
+			particle->sprite = Sprite::ParticleBasic;
+			break;
+		}
 	}
 }
 
@@ -324,7 +343,6 @@ void update(const App* app,
 		particle->lifetime -= app->delta_time;
 	}
 
-
 	float mx = app->input.mouse.current.x;
 	float my = app->input.mouse.current.y;
 	for (size_t index = 0; index < player_count; index++)
@@ -336,7 +354,6 @@ void update(const App* app,
 		{
 			player_bubble->bubble.consecutive_clicks = 0;
 		}
-
 
 		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
 		if (distance < get_legal_radius(&player_bubble->bubble))
@@ -684,13 +701,12 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 
 void render(App* app, Particle* particles, size_t count)
 {
-	for (size_t index = 0; index < count; index++)
-	{
-		const Particle* particle = &particles[index];
-		const Bubble* bubble = &particle->bubble;
-
-		render(app, bubble, Sprite::BubbleKot);
-	}
+    for (size_t index = 0; index < count; index++)
+    {
+        const Particle* particle = &particles[index];
+        const Bubble* bubble = &particle->bubble;
+		render(app, bubble, particle->sprite);
+    }
 }
 
 void render(App* app, UpgradeBubble* bubbles, size_t count)
