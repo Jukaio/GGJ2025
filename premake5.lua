@@ -48,6 +48,8 @@ workspace "Engine"
     {
         "{COPY} %{wks.location}/../dependencies/sdl3/lib/%{cfg.system}/%{cfg.architecture}/SDL3.dll %{cfg.buildtarget.directory}",
         "{COPY} %{wks.location}/../dependencies/sdl3_ttf/lib/%{cfg.system}/%{cfg.architecture}/SDL3_ttf.dll %{cfg.buildtarget.directory}",
+        "{COPY} %{wks.location}/../dependencies/sdl3_mixer/lib/%{cfg.system}/%{cfg.architecture}/SDL3_mixer.dll %{cfg.buildtarget.directory}",
+        "{COPY} %{wks.location}/../dependencies/sdl3_image/lib/%{cfg.system}/%{cfg.architecture}/SDL3_image.dll %{cfg.buildtarget.directory}",
         "{COPY} %{wks.location}/../assets/gen %{cfg.buildtarget.directory}/assets/gen"
     }
 
