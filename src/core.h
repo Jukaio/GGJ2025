@@ -1,9 +1,19 @@
 #pragma once
 
+#include <SDL3/SDL_Keyboard.h>
+#include <SDL3/SDL_Mouse.h>
+#include <SDL3/SDL_video.h>
+
 using i32 = int;
 using i64 = long long;
 using u32 = unsigned int;
 using u64 = unsigned long long;
+
+struct AssetRef
+{
+	uint64_t offset;
+	uint64_t size;
+};
 
 void platform_init();
 void platform_destroy();
@@ -20,11 +30,11 @@ struct AssetRef
     do {                                                                        \
         if (!(condition)) {                                                     \
             char buffer[1024];                                                  \
-            snprintf(buffer, sizeof(buffer),                                    \
+            SDL_snprintf(buffer, sizeof(buffer),                                    \
                      "Assertion failed: (%s)\nFile: %s\nLine: %d\nMessage: ",   \
                      #condition, __FILE__, __LINE__);                           \
-            snprintf(buffer + strlen(buffer),                                   \
-                     sizeof(buffer) - strlen(buffer),                           \
+            SDL_snprintf(buffer + SDL_strlen(buffer),                                   \
+                     sizeof(buffer) - SDL_strlen(buffer),                           \
                      "%s", msg);                                                \
             message_box("Assertion Failed", buffer);                            \
             __debugbreak();                                                     \
@@ -35,11 +45,11 @@ struct AssetRef
     do {                                                                        \
         if (!(condition)) {                                                     \
             char buffer[1024];                                                  \
-            snprintf(buffer, sizeof(buffer),                                    \
+            SDL_snprintf(buffer, sizeof(buffer),                                    \
                      "Assertion failed: (%s)\nFile: %s\nLine: %d\nMessage: ",   \
                      #condition, __FILE__, __LINE__);                           \
-            snprintf(buffer + strlen(buffer),                                   \
-                     sizeof(buffer) - strlen(buffer),                           \
+            SDL_snprintf(buffer + SDL_strlen(buffer),                                   \
+                     sizeof(buffer) - SDL_strlen(buffer),                           \
                      format, ##__VA_ARGS__);                                    \
             message_box("Assertion Failed", buffer);                            \
             __debugbreak();                                                     \
@@ -112,8 +122,8 @@ struct InputDevice
 
 struct App
 {
-	SDL_Window* window;
-	SDL_Renderer* renderer;
+	struct SDL_Window* window;
+	struct SDL_Renderer* renderer;
 	class Upgrades* upgrades;
 
 	InputDevice input;
@@ -180,4 +190,10 @@ inline bool button_up(const MouseDevice* mouse_state, int button_index, int fram
 inline bool button_just_down(const MouseDevice* mouse_state, int button_index)
 {
 	return button_down(mouse_state, button_index, 0) && !button_down(mouse_state, button_index, 1);
+}
+
+inline void update(InputDevice* input)
+{
+	update(&input->keyboard);
+	update(&input->mouse);
 }
