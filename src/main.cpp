@@ -274,7 +274,7 @@ inline void update(MouseDevice* mouse_state)
 
 inline bool button_down(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
 {
-	SDL_assert(frame_index < MOUSE_STATE_FRAME_COUNT &&
+	ASSERT(frame_index < MOUSE_STATE_FRAME_COUNT,
 		"Cannot go that much back in time - Should we fallback to previous?");
 
 	int button_mask = SDL_BUTTON_MASK(button_index);
@@ -479,7 +479,6 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 		}
 	}
 }
-
 
 
 void fixed_update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
@@ -711,6 +710,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+
 	App app{};
 	app.tick_frequency = 1.0f;
 	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
@@ -725,6 +725,12 @@ int main(int argc, char* argv[])
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
 		return -1;
 	}
+
+	constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
+	TTF_Font* font = TTF_OpenFont("./fonts/cheeseburger/CHEESEBU.TTF", 48.0f);
+	TTF_TextEngine* text_engine = TTF_CreateRendererTextEngine(app.renderer);
+	TTF_Text* text = TTF_CreateText(text_engine, font, "0000000", 7);
+	TTF_SetTextColor(text, 255, 255, 255, 255);
 
 	load_assets(app.renderer);
 
@@ -794,6 +800,8 @@ int main(int argc, char* argv[])
 		render(&app, player_bubbles, player_bubble_count);
 
 		render(&app, &player);
+
+		TTF_DrawRendererText(text, 0.0f, 0.0f);
 
 		SDL_RenderPresent(app.renderer);
 
