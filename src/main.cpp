@@ -2,9 +2,21 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
 
+#include "Bouncee.h"
 #include "assets.h"
 #include "core.h"
 typedef uint64_t milliseconds;
+
+
+
+constexpr SDL_Color background_color = SDL_Color{ 129, 191, 183, 255 };
+constexpr SDL_Color bubble_pink_bright = SDL_Color{ 255, 212, 222, 255 };
+constexpr SDL_Color bubble_pink = SDL_Color{ 243, 162, 190, 255 };
+constexpr SDL_Color bubble_pink_dark = SDL_Color{ 212, 93, 135, 255 };
+constexpr SDL_Color bubble_blue_bright = SDL_Color{ 198, 231, 228, 255 };
+constexpr SDL_Color bubble_blue = SDL_Color{ 129, 191, 183, 255 };
+constexpr SDL_Color bubble_blue_dark = SDL_Color{ 34, 81, 90, 255 };
+constexpr SDL_Color bubble_white = SDL_Color{ 214, 250, 249, 255 };
 
 struct KeyboardState
 {
@@ -182,6 +194,12 @@ struct PlayerBubble
 	};
 };
 
+struct Particle {
+	float x, y;
+	float vx, vy;
+	float lifetime;
+	SDL_Color color;
+};
 
 struct AutoBubbleIncremental
 {
@@ -362,6 +380,56 @@ SDL_FRect get_frect(const App* app, const Bubble* bubble)
 	return SDL_FRect{ bubble->x - half, bubble->y - half, size, size };
 }
 
+float get_wobble(float dt)
+{
+	float time = (dt - 0) / 1000.0f;
+	float scale = 1.0f + 0.1f * sin(time * 5.0f);
+	return scale;
+}
+
+void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color color, int count) {
+	for (int i = 0; i < count; ++i) {
+		float angle = static_cast<float>(rand()) / RAND_MAX * 2.0f * PI;
+		float speed = static_cast<float>(rand()) / RAND_MAX * 100.0f + 50.0f;
+
+		Particle* particle = &particles[i];
+		particle->x = x;
+		particle->y = y;
+		particle->vx = cos(angle) * speed;
+		particle->vy = sin(angle) * speed;
+		particle->lifetime = 1.0f;
+		particle->color = color;
+	}
+}
+
+void update(const App* app, Particle* particles, int count) {
+
+	static Uint32 last_emit_time = 0;
+	const Uint32 emit_cooldown = 500; // Cooldown in milliseconds
+
+	Uint32 current_time = SDL_GetTicks();
+	bool can_emit = (current_time - last_emit_time) >= emit_cooldown;
+
+	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+	if (can_emit) {
+		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
+		SDL_Scancode scancode_end = SDL_SCANCODE_9;
+		for (uint32_t current = scancode_begin; current <= scancode_end; current++) {
+			if (key_just_down(&app->input.keyboard, SDL_Scancode(current))) {
+				emit_particles(app, particles, 100, 100, bubble_blue_bright, 10);
+				last_emit_time = current_time;
+			}
+		}
+	}
+
+	for (int i = 0; i < count; ++i) {
+		Particle* particle = &particles[i];
+		particle->x += particle->vx * app->delta_time;
+		particle->y += particle->vy * app->delta_time;
+		particle->lifetime -= app->delta_time;
+	}
+}
+
 void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 {
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
@@ -386,20 +454,22 @@ void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 		float distance = math_distance(state->x, state->y, bubble->bubble.x, bubble->bubble.y);
 
 		float legal_ratop = 1.0f - bubble->bubble.paddding_ratio;
+		//bubble->bubble.radius *= get_wobble(app->now);
+
 		if (distance < bubble->bubble.radius * legal_ratop)
 		{
-			bubble->bubble.color = SDL_Color{ 255, 0, 0, 255 };
+			bubble->bubble.color = bubble_blue;
 
 			if (is_player_clicking)
 			{
 				player->current_money = player->current_money + (player->base * player->multiplier);
-				bubble->bubble.color = SDL_Color{ 255, 255, 255, 255 };
+				bubble->bubble.color = bubble_blue_dark;
 				bubble->bubble.time_since_clicked = app->now;
 			}
 		}
 		else
 		{
-			bubble->bubble.color = SDL_Color{ 0, 0, 255, 255 };
+			bubble->bubble.color = bubble_blue_bright;
 		}
 	}
 }
@@ -418,25 +488,25 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 		float distance = math_distance(state->x, state->y, global_x, global_y);
 		if (player->current_money < bubble->inc.cost)
 		{
-			bubble->bubble.color = SDL_Color{ 128, 128, 128, 255 };
+			bubble->bubble.color = bubble_pink_bright;
 			continue;
 		}
 
 		if (distance < bubble->bubble.radius)
 		{
-			bubble->bubble.color = SDL_Color{ 255, 0, 0, 255 };
+			bubble->bubble.color = bubble_blue;
 
 			if (is_player_clicking)
 			{
 				player->current_money = player->current_money - bubble->inc.cost;
 				bubble->inc.amount = bubble->inc.amount + 1;
 				bubble->bubble.time_since_clicked = app->now;
-				bubble->bubble.color = SDL_Color{ 255, 255, 255, 255 };
+				bubble->bubble.color = bubble_blue_dark;
 			}
 		}
 		else
 		{
-			bubble->bubble.color = SDL_Color{ 255, 0, 255, 255 };
+			bubble->bubble.color = bubble_blue_bright;
 		}
 	}
 }
@@ -455,13 +525,13 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 		float distance = math_distance(state->x, state->y, global_x, global_y);
 		if (player->current_money < bubble->inc.cost)
 		{
-			bubble->bubble.color = SDL_Color{ 128, 128, 128, 255 };
+			bubble->bubble.color = bubble_pink_bright;
 			continue;
 		}
 
 		if (distance < bubble->bubble.radius)
 		{
-			bubble->bubble.color = SDL_Color{ 255, 0, 0, 255 };
+			bubble->bubble.color = bubble_blue;
 
 			if (is_player_clicking)
 			{
@@ -470,12 +540,12 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 				player->multiplier = player->multiplier + bubble->inc.multiplier_bonus;
 
 				bubble->bubble.time_since_clicked = app->now;
-				bubble->bubble.color = SDL_Color{ 255, 255, 255, 255 };
+				bubble->bubble.color = bubble_blue_dark;
 			}
 		}
 		else
 		{
-			bubble->bubble.color = SDL_Color{ 255, 0, 255, 255 };
+			bubble->bubble.color = bubble_blue_bright;
 		}
 	}
 }
@@ -606,6 +676,7 @@ constexpr int window_height_half = window_height / 2;
 constexpr float bubble_click_duration = 0.25f;
 constexpr float bubble_click_scale = 0.60f;
 
+
 void setup(PlayerBubble* player_bubbles, size_t count)
 {
 	SDL_assert(count == 1 && "We only handle one player bubble for now");
@@ -639,12 +710,12 @@ void setup(AutoBubble* auto_bubbles, size_t auto_bubble_count)
 		auto_bubble->width = width;
 		auto_bubble->height = height;
 
-		auto_bubble->color = SDL_Color{ 255, 255, 0, 255 };
+		auto_bubble->color = bubble_pink_dark;
 
 		bubble->x = radius;
 		bubble->y = radius;
 		bubble->radius = radius;
-		bubble->color = SDL_Color{ 255, 0, 255, 255 };
+		bubble->color = bubble_pink;
 
 		AutoBubbleIncremental config = {};
 		config.cooldown = 1;
@@ -679,12 +750,12 @@ void setup(UpgradeBubble* upgrade_bubbles, size_t auto_bubble_count)
 		upgrade_bubble->width = width;
 		upgrade_bubble->height = height;
 
-		upgrade_bubble->color = SDL_Color{ 255, 255, 0, 255 };
+		upgrade_bubble->color = bubble_blue_dark;
 
 		bubble->x = radius;
 		bubble->y = radius;
 		bubble->radius = radius;
-		bubble->color = SDL_Color{ 255, 0, 255, 255 };
+		bubble->color = bubble_blue;
 
 		UpgradeBubbleIncremental config = {};
 		config.cost = (32 + (index * 2) * 32);
@@ -729,7 +800,7 @@ int main(int argc, char* argv[])
 
 	load_assets(app.renderer);
 
-	constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
+	constexpr SDL_Color white = bubble_white;
 	TTF_Font* font = TTF_OpenFont("./assets/Cheeseburger.ttf", 48.0f);
 	TTF_TextEngine* text_engine = TTF_CreateRendererTextEngine(app.renderer);
 	TTF_Text* text = TTF_CreateText(text_engine, font, "0000000", 0);
@@ -751,6 +822,9 @@ int main(int argc, char* argv[])
 
 	constexpr size_t upgrade_bubble_count = 4;
 	UpgradeBubble upgrade_bubbles[upgrade_bubble_count]{};
+
+	constexpr size_t particle_count = 100;
+	Particle particles[particle_count]{};
 
 	setup(player_bubbles, player_bubble_count);
 	setup(auto_bubbles, auto_bubble_count);
@@ -793,9 +867,12 @@ int main(int argc, char* argv[])
 		update(&app, &player, player_bubbles, player_bubble_count);
 		update(&app, &player, auto_bubbles, auto_bubble_count);
 		update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
+		update(&app, particles, particle_count);
 
 		// Render
-		SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 0);
+		
+		SDL_SetRenderDrawColor(app.renderer, background_color.r, background_color.g, background_color.b,
+			background_color.a);
 
 		SDL_RenderClear(app.renderer);
 

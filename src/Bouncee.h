@@ -1,5 +1,7 @@
 #pragma once
 
+inline float PI = 3.14159265359f;
+
 class Bouncee
 {
 public:
