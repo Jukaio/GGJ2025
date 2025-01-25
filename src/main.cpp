@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "assets.h"
 #include "Bouncee.h"
@@ -216,10 +217,10 @@ struct PlayerBubble
 
 struct Particle
 {
-	float x, y;
-	float vx, vy;
+	Bubble bubble;
+	float vx;
+	float vy;
 	float lifetime;
-	SDL_Color color;
 };
 
 struct AutoBubbleIncremental
@@ -420,44 +421,37 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 		float speed = static_cast<float>(rand()) / RAND_MAX * 100.0f + 50.0f;
 
 		Particle* particle = &particles[i];
-		particle->x = (float)x;
-		particle->y = (float)y;
+		particle->bubble.x = (float)x;
+		particle->bubble.y = (float)y;
 		particle->vx = cosf(angle) * speed;
 		particle->vy = sinf(angle) * speed;
 		particle->lifetime = 1.0f;
-		particle->color = color;
+		particle->bubble.color = color;
 	}
 }
 
 void update(const App* app, Particle* particles, int count)
 {
-
 	static u64 last_emit_time = 0;
-	const Uint32 emit_cooldown = 500; // Cooldown in milliseconds
+	const Uint32 emit_cooldown = 10; // Cooldown in milliseconds
 
-	u64 current_time = SDL_GetTicks();
-	bool can_emit = (current_time - last_emit_time) >= emit_cooldown;
+	bool can_emit = (app->delta_time - last_emit_time) >= emit_cooldown;
 
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
-	if (can_emit)
+	//if (can_emit)
 	{
-		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
-		SDL_Scancode scancode_end = SDL_SCANCODE_9;
-		for (uint32_t current = scancode_begin; current <= scancode_end; current++)
+		if (is_player_clicking)
 		{
-			if (key_just_down(&app->input.keyboard, SDL_Scancode(current)))
-			{
-				emit_particles(app, particles, 100, 100, bubble_blue_bright, 10);
-				last_emit_time = current_time;
-			}
+			emit_particles(app, particles, 100, 100, bubble_blue_bright, 10);
+			last_emit_time = app->delta_time;
 		}
 	}
 
 	for (int i = 0; i < count; ++i)
 	{
 		Particle* particle = &particles[i];
-		particle->x += particle->vx * app->delta_time;
-		particle->y += particle->vy * app->delta_time;
+		particle->bubble.x += particle->vx * app->delta_time;
+		particle->bubble.y += particle->vy * app->delta_time;
 		particle->lifetime -= app->delta_time;
 	}
 }
@@ -768,6 +762,28 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 	}
 }
 
+void render(App* app, Particle* particles, size_t count)
+{
+	for (size_t index = 0; index < count; index++)
+	{
+		const Particle* particle = &particles[index];
+		const Bubble* bubble = &particle->bubble;
+
+		{
+			SDL_Color c = bubble->color;
+			SDL_SetRenderDrawColor(app->renderer, c.r, c.g, c.b, c.a);
+
+			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+			float w, h;
+			SDL_GetTextureSize(texture, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+			SDL_FRect dst = SDL_FRect{ particle->bubble.x, particle->bubble.y, particle->bubble.radius, particle->bubble.radius };
+
+			SDL_RenderTexture(app->renderer, texture, &src, &dst);
+		}
+	}
+}
+
 void render(App* app, UpgradeBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
@@ -963,11 +979,11 @@ int main(int argc, char* argv[])
 	player.current_multiplier = 1;
 
 	SinglePlayerUI player_ui{};
-	player_ui.score = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
+	player_ui.score = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
 	TTF_SetTextColor(player_ui.score, 255, 255, 255, 255);
 
-	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
-	player_ui.multiplier = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
+	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
+	player_ui.multiplier = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
 
 	// Only one bubble for now
 	constexpr size_t player_bubble_count = 1;
@@ -1036,6 +1052,7 @@ int main(int argc, char* argv[])
 		render(&app, auto_bubbles, auto_bubble_count);
 		render(&app, upgrade_bubbles, upgrade_bubble_count);
 		render(&app, player_bubbles, player_bubble_count);
+		render(&app, particles, particle_count);
 
 		render(&app, &player_ui);
 
