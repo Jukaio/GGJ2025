@@ -903,7 +903,9 @@ int main(int argc, char* argv[])
 
 	for (int index = 0; index < (int)Upgrade::Count; index++)
 	{
-		app.upgrades->labels[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
+		app.upgrades->cost[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "Cost/Cost", 0);
+		app.upgrades->count[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "123", 0);
+		app.upgrades->name[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "Grandma", 0);
 	}
 
 	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
@@ -987,8 +989,7 @@ int main(int argc, char* argv[])
 		SDL_GetWindowSize(app.window, &w, &h);
 		canvas.w = w;
 		canvas.h = h;
-		draw_tab_bottom_button(&app, &canvas);
-		draw_tabs(&app, &canvas);
+		draw_stack_panel(&app, &canvas);
 
 
 		SDL_RenderPresent(app.renderer);
