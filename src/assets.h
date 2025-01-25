@@ -11,6 +11,7 @@ inline SDL_Texture** tex;
 struct TexturesExchangeInData {
 	SDL_Renderer* renderer;
 	SDL_Surface* queried_surfaces[(u64)Sprite::Count];
+	unsigned char* png_source[(u64)Sprite::Count];
 };
 
 inline void load_assets_exchange(void* data)
@@ -21,6 +22,7 @@ inline void load_assets_exchange(void* data)
 	{
 		SDL_Surface* srf = in_data->queried_surfaces[i];
 		tex[i] = SDL_CreateTextureFromSurface(in_data->renderer, srf);
+		stbi_image_free(in_data->png_source[i]);
 		if (tex[i] == nullptr) {
 			SDL_Log("%s", SDL_GetError());
 		}
@@ -48,9 +50,10 @@ inline int load_assets_from_gen(void* data)
 		int y;
 		int channels;
 		const unsigned char* buf = g_spriteData;
-		const unsigned char* png = stbi_load_from_memory(buf + ref.offset, ref.size, &x, &y, &channels, 4);
+		unsigned char* png = stbi_load_from_memory(buf + ref.offset, ref.size, &x, &y, &channels, 4);
 
 		SDL_Surface* srf = SDL_CreateSurfaceFrom(x, y, SDL_PIXELFORMAT_RGBA32, (void*)png, x * 4);
+		in_data->png_source[i] = png;
 		in_data->queried_surfaces[i] = srf;
 	}
 

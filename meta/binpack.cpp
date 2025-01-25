@@ -183,8 +183,9 @@ void write_asset_enum(std::string* s, const Assets* assets, const char* name)
 
 void write_asset_fwd_decl(std::string* s, const char* name)
 {
-    s->append("extern const unsigned char[] ");
+    s->append("extern const unsigned char ");
     s->append(name);
+    s->append("[]");
     s->append(";\n\n");
 }
 
