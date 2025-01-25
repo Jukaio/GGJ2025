@@ -6,7 +6,6 @@
 
 #include "gen/fonts.h"
 #include "gen/sprites.h"
-#include "stb_image.h"
 
 
 inline SDL_Texture** tex;
