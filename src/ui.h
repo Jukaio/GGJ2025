@@ -33,6 +33,31 @@ enum class Upgrade
 	Count
 };
 
+const Sprite UpgradeIcons[] =
+{
+	Sprite::UpgradeDeadFish,
+	Sprite::UpgradeSoapUsed,
+	Sprite::UpgradSoap,
+	Sprite::UpgradeDuck,
+
+	Sprite::UpgradeDuckNeon,
+	Sprite::UpgradeDuckBetter,
+	Sprite::UpgradeBathEmpty,
+	Sprite::UpgradeBath
+};
+
+const char* UpgradeNames[] =
+{
+    "Dead Fish",
+    "Soap Used",
+    "Soap",
+    "Duck",
+    "Duck Neon",
+    "Duck Better",
+    "Bath Empty",
+    "Bath Full"
+};
+
 const double UpgradeCosts[] =
 {
 	50.0,
@@ -40,10 +65,63 @@ const double UpgradeCosts[] =
 	200.0,
 	800.0,
 
-	50,
-	100,
-	150,
-	200
+	1000.0,
+	2000.0,
+	5000.0,
+	10000.0
+};
+
+const double SkinCosts[] =
+{
+	100.0,
+	200.0,
+	500.0,
+	1000.0,
+	2000.0,
+	5000.0,
+	10000.0,
+	20000.0,
+	50000.0,
+	100000.0,
+	200000.0,
+	500000.0,
+	1000000.0
+};
+
+//Keep in sort!
+
+const char* SkinNames[] =
+{
+	"Glare",
+	"Basic",
+	"Angel",
+	"Devil",
+	"Eyes",
+	"Glasses",
+	"Mouth",
+	"Ghost",
+	"Dead Eyes",
+	"Sun Glasses",
+	"Bow",
+	"Tie",
+	"Kot"
+};
+
+const Sprite SkinIcons[] =
+{
+	Sprite::BubbleGlare,
+	Sprite::BubbleBase,
+	Sprite::BubbleAngel,
+	Sprite::BubbleDevil,
+	Sprite::BubbleGhostEyes,
+	Sprite::BubbleGlasses,
+	Sprite::BubbleWeirdMouth,
+	Sprite::BubbleGhost,
+	Sprite::BubbleDead,
+	Sprite::BubbleSunglasses,
+	Sprite::BubbleBow,
+	Sprite::BubblesTie,
+	Sprite::BubbleKot
 };
 
 struct Upgrades
@@ -97,10 +175,8 @@ inline bool button(const App* app, const SDL_FRect* btn, Sprite sprite)
 	{
 		SDL_SetTextureColorMod(texture, btn_over_tint.r, btn_over_tint.g, btn_over_tint.b);
 	}
-
-	SDL_RenderTexture(app->renderer, texture, &src, btn);
-
-
+	SDL_RenderTexture9Grid(app->renderer, texture, &src, 128.0f, 128.0f, 128.0f, 128.0f, 0.16f, btn);
+	
 	SDL_SetTextureColorModFloat(texture, 1.0f, 1.0f, 1.0f);
 
 	return overlap && button_just_down(m, 1);
@@ -190,17 +266,17 @@ inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, u64* money
 {
 	SDL_FRect btn;
 	btn.w = canvas->w * 0.2f;
-	btn.h = canvas->h * 0.08f;
-	btn.x = canvas->w - btn.w;
-	btn.y = canvas->h * 0.3f;
+	btn.h = canvas->h * 0.1f;
+	btn.x = canvas->w - btn.w - btn.w * 0.08f;
+	btn.y = canvas->h * 0.04f;
 
-	float off = btn.h + 0.1f * btn.h;
+	float off = btn.h + 0.15f * btn.h;
 
 	for (int i = 0; i < (int)Upgrade::Count; ++i)
 	{
 		double cost = UpgradeCosts[i];
 		bool affordable = (double)*money >= cost;
-		if (button(app, &btn, app->upgrades->sprite[i]) && affordable)
+		if (button(app, &btn, Sprite::BoxUI2) && affordable)
 		{
 			*money -= (u64)cost;
 			++app->upgrades->owned_upgrades[i];
@@ -218,6 +294,14 @@ inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, u64* money
 		TTF_DrawRendererText(app->upgrades->name[i], btn.x + btn.w * 0.1f, btn.y + btn.h * 0.15f);
 		TTF_DrawRendererText(app->upgrades->cost[i], btn.x + btn.w * 0.1f, btn.y + btn.h * 0.6f);
 		TTF_DrawRendererText(app->upgrades->count[i], btn.x + btn.w * 0.75f, btn.y + btn.h * 0.2f);
+		
+		SDL_FRect dstIcon = SDL_FRect{btn.x + btn.w * 0.75f, btn.y + btn.h * 0.1f, btn.h,btn.h };
+		float w, h;
+		SDL_Texture* texture = tex[(uint64_t)UpgradeIcons[i]];
+		SDL_GetTextureSize(*tex, &w, &h);
+		SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+
+		SDL_RenderTexture( app->renderer, texture, &src, &dstIcon );
 
 		btn.y += off;
 	}

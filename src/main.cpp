@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 	{
 		app.upgrades->cost[index] = TTF_CreateText(text_engine, fonts_small[(u64)Font::JuicyFruity], "Cost/Cost", 0);
 		app.upgrades->count[index] = TTF_CreateText(text_engine, fonts_small[(u64)Font::JuicyFruity], "123", 0);
-		app.upgrades->name[index] = TTF_CreateText(text_engine, fonts_med[(u64)Font::JuicyFruity], "Grandma", 0);
+		app.upgrades->name[index] = TTF_CreateText(text_engine, fonts_med[(u64)Font::JuicyFruity], UpgradeNames[index], 0);
 	}
 
 	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
