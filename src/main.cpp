@@ -549,7 +549,7 @@ void post_render_update(SinglePlayer* player)
 	player->previous_multiplier = player->current_multiplier;
 }
 
-void render(App* app, const Bubble* bubble, Sprite sprite)
+void render(App* app, const Bubble* bubble, Sprite sprite, float offset_x = 0.0f, float offset_y = 0.0f)
 {
 	SDL_Color c = bubble->color;
 
@@ -562,6 +562,8 @@ void render(App* app, const Bubble* bubble, Sprite sprite)
 	SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 
 	SDL_FRect dst = get_frect(app, bubble);
+	dst.x = dst.x + offset_x;
+	dst.y = dst.y + offset_y;
 	SDL_RenderTexture(app->renderer, texture, &src, &dst);
 }
 
@@ -665,7 +667,7 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
-		render(app, bubble, Sprite::BubbleKot);
+		render(app, bubble, Sprite::BubbleKot, auto_bubble->x, auto_bubble->y);
 	}
 }
 
@@ -684,20 +686,20 @@ void render(App* app, UpgradeBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
-		const UpgradeBubble* auto_bubble = &bubbles[index];
-		const Bubble* bubble = &auto_bubble->bubble;
+		const UpgradeBubble* upgrade_bubble = &bubbles[index];
+		const Bubble* bubble = &upgrade_bubble->bubble;
 
 		{
 			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
 			float w, h;
 			SDL_GetTextureSize(texture, &w, &h);
 			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_FRect dst = SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
+			SDL_FRect dst = SDL_FRect{ upgrade_bubble->x, upgrade_bubble->y, upgrade_bubble->width, upgrade_bubble->height };
 
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
-		render(app, bubble, Sprite::BubbleGhost);
+		render(app, bubble, Sprite::BubbleGhost, upgrade_bubble->x, upgrade_bubble->y);
 	}
 }
 
