@@ -14,7 +14,7 @@ float Bouncee::spike_linear(float t)
 
 float Bouncee::in_sine(float t)
 {
-    t = 1 - cos(t * 0.5f);
+    t = 1 - cosf(t * 0.5f);
     return t;
 }
 
@@ -134,49 +134,49 @@ float Bouncee::spike_quint(float t)
 
 float Bouncee::in_expo(float t)
 {
-    t = 1 - sqrt(1 - t);
+    t = 1 - sqrtf(1 - t);
     return t;
 }
 
 float Bouncee::out_expo(float t)
 {
-    t = sqrt(t);
+    t = sqrtf(t);
     return t;
 }
 
 float Bouncee::in_out_expo(float t)
 {
-    t = t <= 0.5f ? 0.5f - sqrt(1 - 2 * t) / 2 : sqrt(2 * t - 1) / 2 + 0.5f;
+    t = t <= 0.5f ? 0.5f - sqrtf(1 - 2 * t) / 2 : sqrtf(2 * t - 1) / 2 + 0.5f;
     return t;
 }
 
 float Bouncee::spike_expo(float t)
 {
-    t = t <= 0.5f ? 1 - sqrt(1 - 2 * t) : 1 - sqrt(2 * t - 1);
+    t = t <= 0.5f ? 1 - sqrtf(1 - 2 * t) : 1 - sqrtf(2 * t - 1);
     return t;
 }
 
 float Bouncee::in_circular(float t)
 {
-    t = 1 - sqrt(1 - t * t);
+    t = 1 - sqrtf(1 - t * t);
     return t;
 }
 
 float Bouncee::out_circular(float t)
 {
-    t = sqrt(1 - (t - 1) * (t - 1));
+    t = sqrtf(1 - (t - 1) * (t - 1));
     return t;
 }
 
 float Bouncee::in_out_circular(float t)
 {
-    t = t < 0.5f ? 0.5f - sqrt(0.25f - t * t) : sqrt(0.25f - (t - 1) * (t - 1)) + 0.5f;
+    t = t < 0.5f ? 0.5f - sqrtf(0.25f - t * t) : sqrtf(0.25f - (t - 1) * (t - 1)) + 0.5f;
     return t;
 }
 
 float Bouncee::spike_circular(float t)
 {
-    t = t < 0.5f ? 1 - sqrt(1 - 4 * t * t) : 1 - sqrt(1 - (2 * t - 2) * (2 * t - 2));
+    t = t < 0.5f ? 1 - sqrtf(1 - 4 * t * t) : 1 - sqrtf(1 - (2 * t - 2) * (2 * t - 2));
     return t;
 }
 
@@ -232,7 +232,7 @@ float Bouncee::in_elastic(float t, float amplitude, float period)
     {
         return 1;
     }
-    t = - in_quad(t * amplitude) * sin((t - 0.75f) * PI * 2 * period);
+    t = - in_quad(t * amplitude) * sinf((t - 0.75f) * PI * 2 * period);
     return t;
 }
 

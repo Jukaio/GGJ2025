@@ -398,8 +398,8 @@ SDL_FRect get_frect(const App* app, const Bubble* bubble)
 
 float get_wobble(float dt)
 {
-	float time = (dt - 0) / 1000.0f;
-	float scale = 1.0f + 0.1f * sin(time * 5.0f);
+	float time = (dt - 0.0f) / 1000.0f;
+	float scale = 1.0f + 0.1f * sinf(time * 5.0f);
 	return scale;
 }
 
@@ -409,10 +409,10 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 		float speed = static_cast<float>(rand()) / RAND_MAX * 100.0f + 50.0f;
 
 		Particle* particle = &particles[i];
-		particle->x = x;
-		particle->y = y;
-		particle->vx = cos(angle) * speed;
-		particle->vy = sin(angle) * speed;
+		particle->x = (float)x;
+		particle->y = (float)y;
+		particle->vx = cosf(angle) * speed;
+		particle->vy = sinf(angle) * speed;
 		particle->lifetime = 1.0f;
 		particle->color = color;
 	}
@@ -420,18 +420,18 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 
 void update(const App* app, Particle* particles, int count) {
 
-	static Uint32 last_emit_time = 0;
+	static u64 last_emit_time = 0;
 	const Uint32 emit_cooldown = 500; // Cooldown in milliseconds
 
-	Uint32 current_time = SDL_GetTicks();
+	u64 current_time = SDL_GetTicks();
 	bool can_emit = (current_time - last_emit_time) >= emit_cooldown;
 
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 	if (can_emit) {
 		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
 		SDL_Scancode scancode_end = SDL_SCANCODE_9;
-		for (uint32_t current = scancode_begin; current <= scancode_end; current++) {
-			if (key_just_down(&app->input.keyboard, SDL_Scancode(current))) {
+		for (int current = scancode_begin; current <= scancode_end; current++) {
+			if (key_just_down(&app->input.keyboard, (SDL_Scancode)current)) {
 				emit_particles(app, particles, 100, 100, bubble_blue_bright, 10);
 				last_emit_time = current_time;
 			}
@@ -452,9 +452,9 @@ void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 	{
 		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
 		SDL_Scancode scancode_end = SDL_SCANCODE_9;
-		for (uint32_t current = scancode_begin; current <= scancode_end; current++)
+		for (int current = scancode_begin; current <= scancode_end; current++)
 		{
-			if (key_just_down(&app->input.keyboard, SDL_Scancode(current)))
+			if (key_just_down(&app->input.keyboard, (SDL_Scancode)current))
 			{
 				uint64_t multiplier = current - scancode_begin + 1;
 				player->multiplier = multiplier;
