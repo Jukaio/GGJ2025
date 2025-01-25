@@ -7,7 +7,6 @@
 #include "assets.h"
 #include "Bouncee.h"
 #include "core.h"
-
 #include "ui.h"
 typedef uint64_t milliseconds;
 
@@ -54,7 +53,9 @@ struct Bubble
 	float click_scale;
 
 	float duration_click;
-	float time_since_clicked;
+	float time_point_last_clicked;
+
+	uint32_t consecutive_clicks;
 
 	SDL_Color color;
 };
@@ -270,7 +271,7 @@ SDL_Rect get_rect(const Bubble* bubble)
 
 SDL_FRect get_frect(const App* app, const Bubble* bubble)
 {
-	float time_difference = app->now - bubble->time_since_clicked;
+	float time_difference = app->now - bubble->time_point_last_clicked;
 	float frac = time_difference / bubble->duration_click;
 	frac = SDL_clamp(frac, 0.0f, 1.0f);
 
@@ -306,9 +307,16 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 	}
 }
 
-void update(const App* app, Particle* particles, size_t* count, size_t capacity)
+void update(const App* app,
+	Particle* particles,
+	size_t* particle_count,
+	size_t particle_capacity,
+	PlayerBubble* player_bubbles,
+	size_t player_count)
 {
-	for (int i = 0; i < *count; ++i)
+	const uint32_t emit_count = 4;
+
+	for (int i = 0; i < *particle_count; ++i)
 	{
 		Particle* particle = &particles[i];
 		particle->bubble.x += particle->vx * app->delta_time;
@@ -316,34 +324,52 @@ void update(const App* app, Particle* particles, size_t* count, size_t capacity)
 		particle->lifetime -= app->delta_time;
 	}
 
-	const uint32_t emit_cooldown = 10; // Cooldown in milliseconds
-	const uint32_t emit_count = 12;
-	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+
+	float mx = app->input.mouse.current.x;
+	float my = app->input.mouse.current.y;
+	for (size_t index = 0; index < player_count; index++)
 	{
-		if (is_player_clicking)
+		PlayerBubble* player_bubble = &player_bubbles[index];
+
+		float time_difference = app->now - player_bubble->bubble.time_point_last_clicked;
+		if (time_difference > 1.0f)
 		{
-			float mx = app->input.mouse.current.x;
-			float my = app->input.mouse.current.y;
-			if (*count + emit_count > capacity) {
-				uint32_t difference = capacity - *count;
-				emit_particles(app, particles + difference, mx, my, bubble_blue_bright, difference);
-				*count = capacity;
-			}
-			else {
-				emit_particles(app, particles + *count, mx, my, bubble_blue_bright, emit_count);
-				*count = *count + emit_count;
+			player_bubble->bubble.consecutive_clicks = 0;
+		}
+
+
+		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
+		if (distance < get_legal_radius(&player_bubble->bubble))
+		{
+			bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+
+			if (is_player_clicking)
+			{
+				player_bubble->bubble.consecutive_clicks = player_bubble->bubble.consecutive_clicks + 1;
+
+				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
+				if (*particle_count + total_emit_count > particle_capacity)
+				{
+					uint32_t difference = particle_capacity - *particle_count;
+					emit_particles(app, particles + difference, mx, my, bubble_blue_bright, difference);
+					*particle_count = particle_capacity;
+				}
+				else
+				{
+					emit_particles(app, particles + *particle_count, mx, my, bubble_blue_bright, total_emit_count);
+					*particle_count = *particle_count + total_emit_count;
+				}
 			}
 		}
 	}
-
-	for (int i = 0; i < *count; ++i)
+	for (int i = 0; i < *particle_count; ++i)
 	{
 		Particle* particle = &particles[i];
 		if (particle->lifetime < 0.0f)
 		{
 			// Remove swap back
-			particles[i] = particles[*count - 1];
-			*count = *count - 1;
+			particles[i] = particles[*particle_count - 1];
+			*particle_count = *particle_count - 1;
 			// Repeat current
 			i--;
 		}
@@ -385,7 +411,7 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 			if (is_player_clicking)
 			{
 				player->current_money = player->current_money + (player->current_base * player->current_multiplier);
-				bubble->bubble.time_since_clicked = app->now;
+				bubble->bubble.time_point_last_clicked = app->now;
 			}
 		}
 		else
@@ -421,7 +447,7 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 			{
 				player->current_money = player->current_money - bubble->inc.cost;
 				bubble->inc.amount = bubble->inc.amount + 1;
-				bubble->bubble.time_since_clicked = app->now;
+				bubble->bubble.time_point_last_clicked = app->now;
 			}
 		}
 		else
@@ -459,7 +485,7 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 				player->current_base = player->current_base + bubble->inc.base_bonus;
 				player->current_multiplier = player->current_multiplier + bubble->inc.multiplier_bonus;
 
-				bubble->bubble.time_since_clicked = app->now;
+				bubble->bubble.time_point_last_clicked = app->now;
 			}
 		}
 		else
@@ -879,7 +905,8 @@ int main(int argc, char* argv[])
 	constexpr size_t upgrade_bubble_count = 4;
 	UpgradeBubble upgrade_bubbles[upgrade_bubble_count]{};
 
-	constexpr size_t particle_capacity = 100;
+	// MAKE IT INSANE
+	constexpr size_t particle_capacity = 1024;
 	size_t particle_count = 0;
 	Particle particles[particle_capacity]{};
 
@@ -924,7 +951,7 @@ int main(int argc, char* argv[])
 		update(&app, &player, player_bubbles, player_bubble_count);
 		update(&app, &player, auto_bubbles, auto_bubble_count);
 		update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
-		update(&app, particles, &particle_count, particle_capacity);
+		update(&app, particles, &particle_count, particle_capacity, player_bubbles, player_bubble_count);
 		update(&app, &player, &player_ui);
 
 		// Render
@@ -942,7 +969,7 @@ int main(int argc, char* argv[])
 		render(&app, &player_ui);
 
 		SDL_FRect canvas;
-		int w,h;
+		int w, h;
 		SDL_GetWindowSize(app.window, &w, &h);
 		canvas.w = w;
 		canvas.h = h;
