@@ -566,12 +566,13 @@ void post_render_update(SinglePlayer* player)
 	player->previous_multiplier = player->current_multiplier;
 }
 
-void render(App* app, Bubble const* bubble, Sprite sprite)
+void render(App* app, const Bubble* bubble, Sprite sprite)
 {
 	SDL_Color c = bubble->color;
 
 	SDL_Texture* texture = tex[(uint64_t)sprite];
 	SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+	SDL_SetTextureAlphaMod(texture, c.a);
 
 	float w, h;
 	SDL_GetTextureSize(texture, &w, &h);
@@ -681,21 +682,7 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
-		{
-			SDL_Color c = bubble->color;
-
-			SDL_Texture* texture = tex[(uint64_t)Sprite::BubbleKot];
-			float w, h;
-			SDL_GetTextureSize(texture, &w, &h);
-			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-
-			SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
-
-			SDL_FRect dst = get_frect(app, bubble);
-			dst.x = dst.x + auto_bubble->x;
-			dst.y = dst.y + auto_bubble->y;
-			SDL_RenderTexture(app->renderer, texture, &src, &dst);
-		}
+		render(app, bubble, Sprite::BubbleKot);
 	}
 }
 
@@ -726,21 +713,7 @@ void render(App* app, UpgradeBubble* bubbles, size_t count)
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
-		{
-			SDL_Color c = bubble->color;
-
-			SDL_Texture* texture = tex[(uint64_t)Sprite::BubbleGhost];
-			float w, h;
-			SDL_GetTextureSize(texture, &w, &h);
-			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-
-			SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
-
-			SDL_FRect dst = get_frect(app, bubble);
-			dst.x = dst.x + auto_bubble->x;
-			dst.y = dst.y + auto_bubble->y;
-			SDL_RenderTexture(app->renderer, texture, &src, &dst);
-		}
+		render(app, bubble, Sprite::BubbleGhost);
 	}
 }
 
@@ -880,6 +853,9 @@ int main(int argc, char* argv[])
 
 	App app{};
 	app.ui = (UiState*)SDL_malloc(sizeof(UiState));
+	SDL_zero(*app.ui);
+	app.upgrades = (Upgrades*)SDL_malloc(sizeof(Upgrades));
+	SDL_zero(*app.upgrades);
 	app.tick_frequency = 0.25f;
 	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
 	if (app.window == nullptr)
@@ -989,10 +965,8 @@ int main(int argc, char* argv[])
 		SDL_GetWindowSize(app.window, &w, &h);
 		canvas.w = w;
 		canvas.h = h;
-		draw_tab_bottom_button(&app, &canvas, 0);
-		draw_tab_bottom_button(&app, &canvas, 1);
-		draw_tab_bottom_button(&app, &canvas, 2);
-		draw_tab_bottom_button(&app, &canvas, 3);
+		draw_tab_bottom_button(&app, &canvas);
+		draw_tabs(&app, &canvas);
 
 
 		SDL_RenderPresent(app.renderer);

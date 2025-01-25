@@ -111,6 +111,7 @@ struct App
 {
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+	class Upgrades* upgrades;
 
 	InputDevice input;
 
