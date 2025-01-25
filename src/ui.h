@@ -71,7 +71,7 @@ struct UiState
 
 bool button(SDL_Renderer* rend, const SDL_FRect* btn, const MouseDevice* m, Sprite sprite)
 {
-	SDL_FRect mouse_rect{m->current.x, m->current.y, 1, 1};
+	SDL_FRect mouse_rect{ m->current.x, m->current.y, 1, 1 };
 	SDL_FRect _;
 	bool overlap = SDL_GetRectIntersectionFloat(btn, &mouse_rect, &_);
 
@@ -101,14 +101,14 @@ void draw_tab_bottom_button(const App* app, const SDL_FRect* canvas)
 {
 	for (int i = 0; i < (int)Tab::Count; ++i)
 	{
-		const float off = 0.2 * canvas->w;
-		const float sep = 0.2 * canvas->w;
+		const float sep = UiTabWidthScale * canvas->w;
+		const float off = canvas->w - ((int)Tab::Count * UiTabWidthScale * canvas->w);
 
 		Button btn{};
 		btn.rect.w = UiTabWidthScale * canvas->w;
 		btn.rect.h = UiTabHeightScale * canvas->h;
 		btn.rect.x = off + sep * i - (btn.rect.w / 2.0f);
-		btn.rect.y = canvas->h - btn.rect.h -  canvas->h * 0.01f;
+		btn.rect.y = canvas->h - btn.rect.h - canvas->h * 0.01f;
 
 		if (button(app->renderer, &btn.rect, &app->input.mouse, Sprite::BoxUI))
 		{
