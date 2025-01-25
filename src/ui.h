@@ -118,7 +118,7 @@ const Sprite SkinIcons[] =
 	Sprite::BubbleWeirdMouth,
 	Sprite::BubbleGhost,
 	Sprite::BubbleDead,
-	Sprite::BubbleSunglasses,
+	Sprite::BubbleSunglassesPink,
 	Sprite::BubbleBow,
 	Sprite::BubblesTie,
 	Sprite::BubbleKot

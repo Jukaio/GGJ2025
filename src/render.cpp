@@ -147,7 +147,7 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			}
 			if (player_bubble->has_sun_glasses)
 			{
-				render(app, bubble, Sprite::BubbleSunglasses);
+				render(app, bubble, Sprite::BubbleSunglassesPink);
 			}
 			if (player_bubble->has_devil_horns)
 			{
