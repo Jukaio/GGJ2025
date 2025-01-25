@@ -70,7 +70,7 @@ enum BubbleAnimationState
 
 struct BubbleAnimation
 {
-	Sprite sprites[16];
+	Sprite sprites[32];
 
 	BubbleAnimationState state;
 
@@ -859,9 +859,11 @@ void setup(PlayerBubble* player_bubbles, size_t count)
 {
 	SDL_assert(count == 1 && "We only handle one player bubble for now");
 
-	animation_create(&player_bubbles->pop_animation, 0.5f, 11, Sprite::BubblePop1, Sprite::BubblePop2,
+	animation_create(&player_bubbles->pop_animation, 1.0f, 22, Sprite::BubblePop1, Sprite::BubblePop2,
 		Sprite::BubblePop3, Sprite::BubblePop4, Sprite::BubblePop5, Sprite::BubblePop6, Sprite::BubblePop7,
-		Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11);
+		Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11, NO_SPRITE,
+		NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE,
+		NO_SPRITE, NO_SPRITE);
 
 	player_bubbles->bubble.x = window_width_half;
 	player_bubbles->bubble.y = window_height_half;

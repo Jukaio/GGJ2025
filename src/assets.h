@@ -13,6 +13,8 @@ inline TTF_Font* fonts_small[(u64)Font::Count];
 inline TTF_Font* fonts_med[(u64)Font::Count];
 inline TTF_Font* fonts[(u64)Font::Count];
 
+#define NO_SPRITE Sprite::Count
+
 struct TexturesExchangeInData
 {
 	SDL_Renderer* renderer;
@@ -27,6 +29,9 @@ inline void load_assets_exchange(void* data)
 	for (u64 i = 0; i < (u64)Sprite::Count; ++i)
 	{
 		SDL_Surface* srf = in_data->queried_surfaces[i];
+
+		SDL_DestroyTexture(tex[i]);
+
 		tex[i] = SDL_CreateTextureFromSurface(in_data->renderer, srf);
 
 		if (!SDL_CloseIO(in_data->png_source[i]) || tex[i] == nullptr)
@@ -116,9 +121,9 @@ inline void load_assets(SDL_Renderer* renderer)
 	}
 
 	// Load textures
-	u64 sprite_count = (u64)Sprite::Count;
+	u64 sprite_count = (u64)Sprite::Count + 1; // Empty texture in count
 	tex = (SDL_Texture**)SDL_malloc(sizeof(SDL_Texture*) * sprite_count);
-	for (u64 i = 0; i < (u64)Sprite::Count; ++i)
+	for (u64 i = 0; i <= (u64)Sprite::Count; ++i)
 	{
 		tex[i] = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, 0, 0);
 	}
