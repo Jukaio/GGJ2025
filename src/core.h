@@ -19,7 +19,7 @@ void platform_init();
 void platform_destroy();
 void message_box(const char* title, const char* body);
 
-
+#if _WIN32
 #define ASSERT(condition, msg)                                                  \
     do {                                                                        \
         if (!(condition)) {                                                     \
@@ -49,7 +49,10 @@ void message_box(const char* title, const char* body);
             __debugbreak();                                                     \
         }                                                                       \
     } while (0)
-
+#else
+#define ASSERT(...)
+#define ASSERT_FMT(...)
+#endif
 
 struct KeyboardState
 {

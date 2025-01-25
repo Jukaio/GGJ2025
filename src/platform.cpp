@@ -1,4 +1,4 @@
-
+#if _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <shellscalingapi.h>
@@ -19,3 +19,14 @@ void message_box(const char* title, const char* body)
 {
 	MessageBoxA(NULL, body, title, MB_ICONERROR | MB_OK);
 }
+#else
+
+void platform_init()
+{
+	
+}
+void platform_destroy()
+{
+
+}
+#endif
