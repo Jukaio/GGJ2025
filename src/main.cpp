@@ -450,11 +450,12 @@ void update(const App* app,
 		particle->lifetime -= app->delta_time;
 	}
 
-	float mx = app->input.mouse.current.x;
-	float my = app->input.mouse.current.y;
+	bool is_space_press = key_just_down(&app->input.keyboard, SDL_SCANCODE_SPACE);
 	for (size_t index = 0; index < player_count; index++)
 	{
 		PlayerBubble* player_bubble = &player_bubbles[index];
+		float mx = is_space_press ? player_bubble->bubble.x : app->input.mouse.current.x;
+		float my = is_space_press ? player_bubble->bubble.y : app->input.mouse.current.y;
 
 		float time_difference = app->now - player_bubble->bubble.time_point_last_clicked;
 		if (time_difference > 1.0f)
@@ -463,9 +464,9 @@ void update(const App* app,
 		}
 
 		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
-		if (distance < get_legal_radius(&player_bubble->bubble))
+		if (distance < get_legal_radius(&player_bubble->bubble) || is_space_press)
 		{
-			bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+			bool is_player_clicking = button_just_down(&app->input.mouse, 1) || is_space_press;
 
 			if (is_player_clicking)
 			{
@@ -517,6 +518,8 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 	}
 
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+	bool is_space_press = key_just_down(&app->input.keyboard, SDL_SCANCODE_SPACE);
+
 	{
 		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
 		SDL_Scancode scancode_end = SDL_SCANCODE_9;
@@ -542,11 +545,11 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 		MouseState const* state = &app->input.mouse.current;
 		float distance = math_distance(state->x, state->y, bubble->bubble.x, bubble->bubble.y);
 
-		if (distance < get_legal_radius(&bubble->bubble))
+		if (distance < get_legal_radius(&bubble->bubble) || is_space_press)
 		{
 			bubble->bubble.color = bubble_blue;
 
-			if (is_player_clicking)
+			if (is_player_clicking || is_space_press)
 			{
 				player->current_money = player->current_money + (player->current_base * player->current_multiplier);
 				bubble->bubble.time_point_last_clicked = app->now;
