@@ -143,6 +143,7 @@ inline void load_assets(SDL_Renderer* renderer)
 				(spec.channels > 2) ? "surround" :
 				(spec.channels > 1) ? "stereo" : "mono");
 		}
+
 		size_t size;
 		unsigned char* global_buffer = (unsigned char*)SDL_LoadFile(g_audio_path, &size);
 		u64 font_count = (u64)Audio::Count;

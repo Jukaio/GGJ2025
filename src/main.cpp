@@ -229,6 +229,8 @@ struct UpgradeBubble
 	SDL_Color color;
 };
 
+void play(Audio audio) { Mix_PlayChannel(-1, sounds[(u64)audio], 0); }
+
 float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
 
@@ -460,7 +462,8 @@ void update(const App* app,
 		float mx = is_space_press ? player_bubble->bubble.x : app->input.mouse.current.x;
 		float my = is_space_press ? player_bubble->bubble.y : app->input.mouse.current.y;
 
-		if (player_bubble->pop_animation.state == BubbleAnimationStatePlaying) {
+		if (player_bubble->pop_animation.state == BubbleAnimationStatePlaying)
+		{
 			continue;
 		}
 
@@ -477,15 +480,6 @@ void update(const App* app,
 
 			if (is_player_clicking)
 			{
-				player_bubble->bubble.consecutive_clicks = player_bubble->bubble.consecutive_clicks + 1;
-				if (player_bubble->bubble.consecutive_clicks > player_bubble->bubble.burst_cap)
-				{
-					animation_start(&player_bubble->pop_animation);
-					*particle_count = 0;
-					player_bubble->bubble.consecutive_clicks = 0;
-					break;
-				}
-
 				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
 				if (*particle_count + total_emit_count > particle_capacity)
 				{
@@ -547,27 +541,62 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 
 	for (size_t index = 0; index < count; index++)
 	{
-		PlayerBubble* bubble = &player_bubbles[index];
+		PlayerBubble* player_bubble = &player_bubbles[index];
+
+		if (player_bubble->pop_animation.state == BubbleAnimationStatePlaying)
+		{
+			continue;
+		}
 
 		MouseState const* state = &app->input.mouse.current;
-		float distance = math_distance(state->x, state->y, bubble->bubble.x, bubble->bubble.y);
+		float distance = math_distance(state->x, state->y, player_bubble->bubble.x, player_bubble->bubble.y);
 
 		float t = SDL_sin(app->now * 0.5f) * 0.5f + 0.5f;
-		bubble->bubble.radius = lerp(bubble->min_radius, bubble->max_radius, Bouncee::in_elastic(t) + Bouncee::out_elastic(t));
+		player_bubble->bubble.radius = lerp(player_bubble->min_radius, player_bubble->max_radius,
+			Bouncee::in_elastic(t) + Bouncee::out_elastic(t));
 
-		if (distance < get_legal_radius(&bubble->bubble) || is_space_press)
+		if (distance < get_legal_radius(&player_bubble->bubble) || is_space_press)
 		{
-			bubble->bubble.color = bubble_blue;
+			player_bubble->bubble.color = bubble_blue;
 
 			if (is_player_clicking || is_space_press)
 			{
+				player_bubble->bubble.consecutive_clicks = player_bubble->bubble.consecutive_clicks + 1;
+				if (player_bubble->bubble.consecutive_clicks > player_bubble->bubble.burst_cap)
+				{
+					animation_start(&player_bubble->pop_animation);
+					player_bubble->bubble.consecutive_clicks = 0;
+					play(Audio::PopCrit);
+					break;
+				}
+				const uint32_t sliding_pop_window = 4;
+				const Audio pops[] = {
+					Audio::Pop0, Audio::Pop1, Audio::Pop2, Audio::Pop3, Audio::Pop4,
+					Audio::Pop5, Audio::Pop6, Audio::Pop7, Audio::Pop8,
+				};
+
+				const uint32_t pop_count = (sizeof(pops) / sizeof(*pops)) - sliding_pop_window;
+
+				const uint32_t burst_difference =
+					player_bubble->bubble.burst_cap - player_bubble->bubble.consecutive_clicks;
+				const float frac =
+					SDL_clamp(1.0f - (float(burst_difference) / float(player_bubble->bubble.burst_cap)), 0.0f, 1.0f);
+
+
+				const uint32_t lower_bound = pop_count * frac;
+				const uint32_t upper_bound = (pop_count * frac) + sliding_pop_window;
+				const uint32_t random = rand() % sliding_pop_window;
+
+				Audio target = pops[lower_bound + random];
+				play(target);
+
 				player->current_money = player->current_money + (player->current_base * player->current_multiplier);
-				bubble->bubble.time_point_last_clicked = app->now;
+				player_bubble->bubble.time_point_last_clicked = app->now;
 			}
 		}
 		else
 		{
-			bubble->bubble.color = bubble_blue_bright;
+			player_bubble->bubble.color = bubble_blue_bright;
 		}
 	}
 }
@@ -596,6 +625,8 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 
 			if (is_player_clicking)
 			{
+				Mix_PlayChannel(-1, sounds[(u64)Audio::MildPop], 0);
+
 				player->current_money = player->current_money - bubble->inc.cost;
 				bubble->inc.amount = bubble->inc.amount + 1;
 				bubble->bubble.time_point_last_clicked = app->now;
@@ -632,6 +663,8 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 
 			if (is_player_clicking)
 			{
+				Mix_PlayChannel(-1, sounds[(u64)Audio::MildPop], 0);
+
 				player->current_money = player->current_money - bubble->inc.cost;
 				player->current_base = player->current_base + bubble->inc.base_bonus;
 				player->current_multiplier = player->current_multiplier + bubble->inc.multiplier_bonus;
@@ -712,7 +745,8 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			float w, h;
 			SDL_GetTextureSize(texture, &w, &h);
 			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_FRect dst = SDL_FRect{ bubble->x, bubble->y, player_bubble->max_radius * 4.0f, player_bubble->max_radius * 4.0f };
+			SDL_FRect dst =
+				SDL_FRect{ bubble->x, bubble->y, player_bubble->max_radius * 4.0f, player_bubble->max_radius * 4.0f };
 			dst.x -= player_bubble->max_radius * 2.0f;
 			dst.y -= player_bubble->max_radius * 2.0f;
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
@@ -872,7 +906,7 @@ void setup(PlayerBubble* player_bubbles, size_t count)
 {
 	SDL_assert(count == 1 && "We only handle one player bubble for now");
 
-	animation_create(&player_bubbles->pop_animation, 1.75f, 24, Sprite::BubblePop1, Sprite::BubblePop2,
+	animation_create(&player_bubbles->pop_animation, 1.45f, 24, Sprite::BubblePop1, Sprite::BubblePop2,
 		Sprite::BubblePop3, Sprite::BubblePop4, Sprite::BubblePop5, Sprite::BubblePop6, Sprite::BubblePop7,
 		Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11, NO_SPRITE,
 		NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE,
@@ -925,8 +959,8 @@ void setup(AutoBubble* auto_bubbles, size_t auto_bubble_count)
 		bubble->click_scale = bubble_click_scale;
 		bubble->duration_click = bubble_click_duration;
 
-		//print(auto_bubble);
-		//SDL_Log("");
+		// print(auto_bubble);
+		// SDL_Log("");
 	}
 }
 
@@ -966,7 +1000,7 @@ void setup(UpgradeBubble* upgrade_bubbles, size_t auto_bubble_count)
 
 		upgrade_bubble->inc = config;
 
-		//SDL_Log("");
+		// SDL_Log("");
 	}
 }
 
