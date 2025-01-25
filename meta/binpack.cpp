@@ -80,6 +80,7 @@ struct Assets
 {
 	std::vector<Asset> images;
 	std::vector<Asset> fonts;
+	std::vector<Asset> wave;
 };
 
 void load_assets(Assets* inout_assets)
@@ -111,6 +112,11 @@ void load_assets(Assets* inout_assets)
             if(entry.path().extension() == ".ttf")
             {
                 asset = &inout_assets->fonts.emplace_back();
+            }
+
+            if(entry.path().extension() == ".wav")
+            {
+                asset = &inout_assets->wave.emplace_back();
             }
             
             if(asset)
@@ -439,6 +445,9 @@ int main()
     write_source_file(generate_header(&assets.fonts, "Font", "g_font_offsets", "assets/gen/fonts.bin"), "src/gen/fonts.h");
     write_asset_bin(&assets.fonts, "assets/gen/fonts.bin");
 
+    write_source_file(generate_header(&assets.wave, "Audio", "g_audio_offsets", "assets/gen/audio.bin"), "src/gen/audio.h");
+    write_asset_bin(&assets.fonts, "assets/gen/audio.bin");
+
 	for (auto& img : assets.images)
 	{
 		free_buffer(&img.buffer);
@@ -447,6 +456,11 @@ int main()
     for (auto& font : assets.fonts)
 	{
 		free_buffer(&font.buffer);
+	}
+
+    for (auto& wave : assets.wave)
+	{
+		free_buffer(&wave.buffer);
 	}
 
 	return 0;
