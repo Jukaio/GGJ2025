@@ -7,6 +7,8 @@
 #include "assets.h"
 #include "Bouncee.h"
 #include "core.h"
+
+#include "ui.h"
 typedef uint64_t milliseconds;
 
 
@@ -19,79 +21,6 @@ constexpr SDL_Color bubble_blue = SDL_Color{ 129, 191, 183, 255 };
 constexpr SDL_Color bubble_blue_dark = SDL_Color{ 34, 81, 90, 255 };
 constexpr SDL_Color bubble_white = SDL_Color{ 214, 250, 249, 255 };
 
-struct KeyboardState
-{
-	bool state[SDL_SCANCODE_COUNT];
-};
-
-enum
-{
-	KEYBOARD_STATE_FRAME_COUNT = 2
-};
-
-struct KeyboardDevice
-{
-	union
-	{
-		KeyboardState state[KEYBOARD_STATE_FRAME_COUNT];
-
-		struct
-		{
-			KeyboardState current;
-			KeyboardState previous;
-			// ...
-		};
-	};
-};
-
-struct MouseState
-{
-	float x;
-	float y;
-
-	Uint32 buttons;
-};
-
-enum
-{
-	MOUSE_STATE_FRAME_COUNT = 2
-};
-
-struct MouseDevice
-{
-	// 0 = current; 1 = previous; ...
-	union
-	{
-		MouseState frames[MOUSE_STATE_FRAME_COUNT];
-
-		struct
-		{
-			MouseState current;
-			MouseState previous;
-			// ...
-		};
-	};
-};
-
-struct InputDevice
-{
-	MouseDevice mouse;
-	KeyboardDevice keyboard;
-};
-
-struct App
-{
-	SDL_Window* window;
-	SDL_Renderer* renderer;
-
-	InputDevice input;
-
-	float tick_frequency;
-	float tick_accumulator;
-
-	float now;
-	float delta_time;
-};
 
 struct SinglePlayer
 {
@@ -272,61 +201,6 @@ inline float get_legal_radius(Bubble* bubble)
 {
 	float legal_ratio = 1.0f - bubble->paddding_ratio;
 	return bubble->radius * legal_ratio;
-}
-
-inline void update(KeyboardDevice* keyboard_state)
-{
-	int num_keys = 0;
-	const bool* current_state = SDL_GetKeyboardState(&num_keys);
-
-	const size_t size = num_keys * sizeof(*keyboard_state->current.state);
-
-	SDL_memcpy((bool*)keyboard_state->previous.state, (bool*)keyboard_state->current.state, size);
-
-	SDL_memcpy((bool*)keyboard_state->current.state, (bool*)current_state, size);
-}
-
-inline bool key_down(KeyboardDevice const* keyboard_state, SDL_Scancode scancode, int frame_index = 0)
-{
-	return keyboard_state->state[frame_index].state[(size_t)scancode];
-}
-
-inline bool key_up(KeyboardDevice const* keyboard_state, SDL_Scancode scancode, int frame_index = 0)
-{
-	return !key_down(keyboard_state, scancode, frame_index);
-}
-
-inline bool key_just_down(KeyboardDevice const* keyboard_state, SDL_Scancode scancode)
-{
-	return key_down(keyboard_state, scancode, 0) && key_up(keyboard_state, scancode, 1);
-}
-
-inline void update(MouseDevice* mouse_state)
-{
-	mouse_state->previous = mouse_state->current;
-
-	float* x = &mouse_state->current.x;
-	float* y = &mouse_state->current.y;
-	mouse_state->current.buttons = SDL_GetMouseState(x, y);
-}
-
-inline bool button_down(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
-{
-	ASSERT(frame_index < MOUSE_STATE_FRAME_COUNT, "Cannot go that much back in time - Should we fallback to previous?");
-
-	int button_mask = SDL_BUTTON_MASK(button_index);
-	const MouseState* state = &mouse_state->frames[frame_index];
-	return (state->buttons & button_mask) == button_mask;
-}
-
-inline bool button_up(const MouseDevice* mouse_state, int button_index, int frame_index = 0)
-{
-	return !button_down(mouse_state, button_index, frame_index);
-}
-
-inline bool button_just_down(const MouseDevice* mouse_state, int button_index)
-{
-	return button_down(mouse_state, button_index, 0) && !button_down(mouse_state, button_index, 1);
 }
 
 void update(InputDevice* input)
@@ -861,8 +735,8 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	App app{};
+	app.ui = (UiState*)SDL_malloc(sizeof(UiState));
 	app.tick_frequency = 0.25f;
 	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
 	if (app.window == nullptr)
@@ -963,6 +837,17 @@ int main(int argc, char* argv[])
 		render(&app, player_bubbles, player_bubble_count);
 
 		render(&app, &player_ui);
+
+		SDL_FRect canvas;
+		int w,h;
+		SDL_GetWindowSize(app.window, &w, &h);
+		canvas.w = w;
+		canvas.h = h;
+		draw_tab_bottom_button(&app, &canvas, 0);
+		draw_tab_bottom_button(&app, &canvas, 1);
+		draw_tab_bottom_button(&app, &canvas, 2);
+		draw_tab_bottom_button(&app, &canvas, 3);
+
 
 		SDL_RenderPresent(app.renderer);
 
