@@ -369,75 +369,6 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 	}
 }
 
-void update(const App* app,
-	Particle* particles,
-	size_t* particle_count,
-	size_t particle_capacity,
-	PlayerBubble* player_bubbles,
-	size_t player_count)
-{
-	const uint32_t emit_count = 4;
-
-	for (int i = 0; i < *particle_count; ++i)
-	{
-		Particle* particle = &particles[i];
-		particle->bubble.x += particle->vx * app->delta_time;
-		particle->bubble.y += particle->vy * app->delta_time;
-		particle->lifetime -= app->delta_time;
-	}
-
-	float mx = app->input.mouse.current.x;
-	float my = app->input.mouse.current.y;
-	for (size_t index = 0; index < player_count; index++)
-	{
-		PlayerBubble* player_bubble = &player_bubbles[index];
-
-		float time_difference = app->now - player_bubble->bubble.time_point_last_clicked;
-		if (time_difference > 1.0f)
-		{
-			player_bubble->bubble.consecutive_clicks = 0;
-		}
-
-		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
-		if (distance < get_legal_radius(&player_bubble->bubble))
-		{
-			bool is_player_clicking = button_just_down(&app->input.mouse, 1);
-
-			if (is_player_clicking)
-			{
-				player_bubble->bubble.consecutive_clicks = player_bubble->bubble.consecutive_clicks + 1;
-				if (player_bubble->bubble.consecutive_clicks > player_bubble->bubble.burst_cap)
-				{
-					animation_start(&player_bubble->pop_animation);
-				}
-				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
-				if (*particle_count + total_emit_count > particle_capacity)
-				{
-					uint32_t difference = particle_capacity - *particle_count;
-					emit_particles(app, particles + difference, mx, my, bubble_blue_bright, difference);
-					*particle_count = particle_capacity;
-				}
-				else
-				{
-					emit_particles(app, particles + *particle_count, mx, my, bubble_blue_bright, total_emit_count);
-					*particle_count = *particle_count + total_emit_count;
-				}
-			}
-		}
-	}
-	for (int i = 0; i < *particle_count; ++i)
-	{
-		Particle* particle = &particles[i];
-		if (particle->lifetime < 0.0f)
-		{
-			// Remove swap back
-			particles[i] = particles[*particle_count - 1];
-			*particle_count = *particle_count - 1;
-			// Repeat current
-			i--;
-		}
-	}
-}
 
 void animation_add(BubbleAnimation* animation, Sprite sprite)
 {
@@ -501,6 +432,81 @@ bool animation_render(App* app, const BubbleAnimation* animation, const Bubble* 
 	}
 	return false;
 }
+
+void update(const App* app,
+	Particle* particles,
+	size_t* particle_count,
+	size_t particle_capacity,
+	PlayerBubble* player_bubbles,
+	size_t player_count)
+{
+	const uint32_t emit_count = 4;
+
+	for (int i = 0; i < *particle_count; ++i)
+	{
+		Particle* particle = &particles[i];
+		particle->bubble.x += particle->vx * app->delta_time;
+		particle->bubble.y += particle->vy * app->delta_time;
+		particle->lifetime -= app->delta_time;
+	}
+
+	float mx = app->input.mouse.current.x;
+	float my = app->input.mouse.current.y;
+	for (size_t index = 0; index < player_count; index++)
+	{
+		PlayerBubble* player_bubble = &player_bubbles[index];
+
+		float time_difference = app->now - player_bubble->bubble.time_point_last_clicked;
+		if (time_difference > 1.0f)
+		{
+			player_bubble->bubble.consecutive_clicks = 0;
+		}
+
+		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
+		if (distance < get_legal_radius(&player_bubble->bubble))
+		{
+			bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+
+			if (is_player_clicking)
+			{
+				player_bubble->bubble.consecutive_clicks = player_bubble->bubble.consecutive_clicks + 1;
+				if (player_bubble->bubble.consecutive_clicks > player_bubble->bubble.burst_cap)
+				{
+					animation_start(&player_bubble->pop_animation);
+					*particle_count = 0;
+					player_bubble->bubble.consecutive_clicks = 0;
+					break;
+				}
+
+				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
+				if (*particle_count + total_emit_count > particle_capacity)
+				{
+					uint32_t difference = particle_capacity - *particle_count;
+					emit_particles(app, particles + difference, mx, my, bubble_blue_bright, difference);
+					*particle_count = particle_capacity;
+				}
+				else
+				{
+					emit_particles(app, particles + *particle_count, mx, my, bubble_blue_bright, total_emit_count);
+					*particle_count = *particle_count + total_emit_count;
+				}
+			}
+		}
+	}
+	for (int i = 0; i < *particle_count; ++i)
+	{
+		Particle* particle = &particles[i];
+		if (particle->lifetime < 0.0f)
+		{
+			// Remove swap back
+			particles[i] = particles[*particle_count - 1];
+			*particle_count = *particle_count - 1;
+			// Repeat current
+			i--;
+		}
+	}
+}
+
 
 void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t count)
 {
@@ -627,7 +633,7 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 	}
 }
 
-void update(App* app, SinglePlayer* player, SinglePlayerUI* ui, bool force = false)
+void post_render_update(App* app, SinglePlayer* player, SinglePlayerUI* ui, bool force = false)
 {
 	if (force || player->previous_money != player->current_money)
 	{
@@ -688,7 +694,6 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 		const PlayerBubble* player_bubble = &bubbles[index];
 		const Bubble* bubble = &player_bubble->bubble;
 
-
 		{
 			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
 			float w, h;
@@ -696,7 +701,7 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 			SDL_FRect dst = SDL_FRect{ bubble->x, bubble->y, 256.0f * 4.0f, 256.0f * 4.0f };
 			dst.x -= 256.0f * 2.0f;
-			dst.y -=256.0f * 2.0f;
+			dst.y -= 256.0f * 2.0f;
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
@@ -1023,7 +1028,7 @@ int main(int argc, char* argv[])
 	setup(auto_bubbles, auto_bubble_count);
 	setup(upgrade_bubbles, upgrade_bubble_count);
 
-	update(&app, &player, &player_ui, true);
+	post_render_update(&app, &player, &player_ui, true);
 
 	bool is_running = true;
 	milliseconds tp = SDL_GetTicks();
@@ -1060,8 +1065,6 @@ int main(int argc, char* argv[])
 		update(&app, &player, auto_bubbles, auto_bubble_count);
 		update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
 		update(&app, particles, &particle_count, particle_capacity, player_bubbles, player_bubble_count);
-		update(&app, &player, &player_ui);
-
 		// Render
 
 		SDL_SetRenderDrawColor(app.renderer, background_color.r, background_color.g, background_color.b,
@@ -1073,7 +1076,6 @@ int main(int argc, char* argv[])
 		render(&app, upgrade_bubbles, upgrade_bubble_count);
 		render(&app, player_bubbles, player_bubble_count);
 		render(&app, particles, particle_count);
-
 		render(&app, &player_ui);
 
 		SDL_FRect canvas;
@@ -1083,9 +1085,9 @@ int main(int argc, char* argv[])
 		canvas.h = h;
 		draw_stack_panel(&app, &canvas, &player.current_money);
 
-
 		SDL_RenderPresent(app.renderer);
 
+		post_render_update(&app, &player, &player_ui);
 		post_render_update(&player);
 	}
 
