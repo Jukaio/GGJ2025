@@ -56,12 +56,9 @@ struct Bubble
 
 	uint32_t consecutive_clicks;
 
-	SDL_Color color;
-};
+	uint32_t burst_cap;
 
-enum BubbleAnimationMode
-{
-	BubbleAnimationModeOnce
+	SDL_Color color;
 };
 
 enum BubbleAnimationState
@@ -75,7 +72,6 @@ struct BubbleAnimation
 {
 	Sprite sprites[16];
 
-	BubbleAnimationMode mode;
 	BubbleAnimationState state;
 
 	float accumulator;
@@ -376,72 +372,6 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 	}
 }
 
-void update(const App* app,
-	Particle* particles,
-	size_t* particle_count,
-	size_t particle_capacity,
-	PlayerBubble* player_bubbles,
-	size_t player_count)
-{
-	const uint32_t emit_count = 4;
-
-	for (int i = 0; i < *particle_count; ++i)
-	{
-		Particle* particle = &particles[i];
-		particle->bubble.x += particle->vx * app->delta_time;
-		particle->bubble.y += particle->vy * app->delta_time;
-		particle->lifetime -= app->delta_time;
-	}
-
-	float mx = app->input.mouse.current.x;
-	float my = app->input.mouse.current.y;
-	for (size_t index = 0; index < player_count; index++)
-	{
-		PlayerBubble* player_bubble = &player_bubbles[index];
-
-		float time_difference = app->now - player_bubble->bubble.time_point_last_clicked;
-		if (time_difference > 1.0f)
-		{
-			player_bubble->bubble.consecutive_clicks = 0;
-		}
-
-		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
-		if (distance < get_legal_radius(&player_bubble->bubble))
-		{
-			bool is_player_clicking = button_just_down(&app->input.mouse, 1);
-
-			if (is_player_clicking)
-			{
-				player_bubble->bubble.consecutive_clicks = player_bubble->bubble.consecutive_clicks + 1;
-
-				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
-				if (*particle_count + total_emit_count > particle_capacity)
-				{
-					uint32_t difference = particle_capacity - *particle_count;
-					emit_particles(app, particles + difference, mx, my, bubble_blue_bright, difference);
-					*particle_count = particle_capacity;
-				}
-				else
-				{
-					emit_particles(app, particles + *particle_count, mx, my, bubble_blue_bright, total_emit_count);
-					*particle_count = *particle_count + total_emit_count;
-				}
-			}
-		}
-	}
-	for (int i = 0; i < *particle_count; ++i)
-	{
-		Particle* particle = &particles[i];
-		if (particle->lifetime < 0.0f)
-		{
-			// Remove swap back
-			particles[i] = particles[*particle_count - 1];
-			*particle_count = *particle_count - 1;
-			// Repeat current
-			i--;
-		}
-	}
-}
 
 void animation_add(BubbleAnimation* animation, Sprite sprite)
 {
@@ -462,6 +392,8 @@ void animation_create(BubbleAnimation* animation, float duration, size_t sprite_
 		animation_add(animation, sprite);
 	}
 	va_end(argp);
+
+	animation->duration = duration;
 }
 
 void animation_start(BubbleAnimation* animation)
@@ -504,6 +436,82 @@ bool animation_render(App* app, const BubbleAnimation* animation, const Bubble* 
 	return false;
 }
 
+void update(const App* app,
+	Particle* particles,
+	size_t* particle_count,
+	size_t particle_capacity,
+	PlayerBubble* player_bubbles,
+	size_t player_count)
+{
+	const uint32_t emit_count = 4;
+
+	for (int i = 0; i < *particle_count; ++i)
+	{
+		Particle* particle = &particles[i];
+		particle->bubble.x += particle->vx * app->delta_time;
+		particle->bubble.y += particle->vy * app->delta_time;
+		particle->lifetime -= app->delta_time;
+	}
+
+	bool is_space_press = key_just_down(&app->input.keyboard, SDL_SCANCODE_SPACE);
+	for (size_t index = 0; index < player_count; index++)
+	{
+		PlayerBubble* player_bubble = &player_bubbles[index];
+		float mx = is_space_press ? player_bubble->bubble.x : app->input.mouse.current.x;
+		float my = is_space_press ? player_bubble->bubble.y : app->input.mouse.current.y;
+
+		float time_difference = app->now - player_bubble->bubble.time_point_last_clicked;
+		if (time_difference > 1.0f)
+		{
+			player_bubble->bubble.consecutive_clicks = 0;
+		}
+
+		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
+		if (distance < get_legal_radius(&player_bubble->bubble) || is_space_press)
+		{
+			bool is_player_clicking = button_just_down(&app->input.mouse, 1) || is_space_press;
+
+			if (is_player_clicking)
+			{
+				player_bubble->bubble.consecutive_clicks = player_bubble->bubble.consecutive_clicks + 1;
+				if (player_bubble->bubble.consecutive_clicks > player_bubble->bubble.burst_cap)
+				{
+					animation_start(&player_bubble->pop_animation);
+					*particle_count = 0;
+					player_bubble->bubble.consecutive_clicks = 0;
+					break;
+				}
+
+				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
+				if (*particle_count + total_emit_count > particle_capacity)
+				{
+					uint32_t difference = particle_capacity - *particle_count;
+					emit_particles(app, particles + difference, mx, my, bubble_blue_bright, difference);
+					*particle_count = particle_capacity;
+				}
+				else
+				{
+					emit_particles(app, particles + *particle_count, mx, my, bubble_blue_bright, total_emit_count);
+					*particle_count = *particle_count + total_emit_count;
+				}
+			}
+		}
+	}
+	for (int i = 0; i < *particle_count; ++i)
+	{
+		Particle* particle = &particles[i];
+		if (particle->lifetime < 0.0f)
+		{
+			// Remove swap back
+			particles[i] = particles[*particle_count - 1];
+			*particle_count = *particle_count - 1;
+			// Repeat current
+			i--;
+		}
+	}
+}
+
+
 void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
@@ -513,6 +521,8 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 	}
 
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+	bool is_space_press = key_just_down(&app->input.keyboard, SDL_SCANCODE_SPACE);
+
 	{
 		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
 		SDL_Scancode scancode_end = SDL_SCANCODE_9;
@@ -541,11 +551,11 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 		float t = SDL_sin( app->now * 0.5f ) * 0.5f + 0.5f;
 		bubble->bubble.radius = lerp( bubble->min_radius, bubble->max_radius, Bouncee::in_elastic( t ) + Bouncee::out_elastic( t ) );
 
-		if (distance < get_legal_radius(&bubble->bubble))
+		if (distance < get_legal_radius(&bubble->bubble) || is_space_press)
 		{
 			bubble->bubble.color = bubble_blue;
 
-			if (is_player_clicking)
+			if (is_player_clicking || is_space_press)
 			{
 				player->current_money = player->current_money + (player->current_base * player->current_multiplier);
 				bubble->bubble.time_point_last_clicked = app->now;
@@ -632,7 +642,7 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 	}
 }
 
-void update(App* app, SinglePlayer* player, SinglePlayerUI* ui, bool force = false)
+void post_render_update(App* app, SinglePlayer* player, SinglePlayerUI* ui, bool force = false)
 {
 	if (force || player->previous_money != player->current_money)
 	{
@@ -690,8 +700,9 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
-		PlayerBubble* player_bubble = &bubbles[index];
+		const PlayerBubble* player_bubble = &bubbles[index];
 		const Bubble* bubble = &player_bubble->bubble;
+
 		{
 			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
 			float w, h;
@@ -703,69 +714,68 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
-		uint64_t base_mask = 0b11 & player_bubble->archetype;
-		if (base_mask == 0)
+		if (!animation_render(app, &player_bubble->pop_animation, &player_bubble->bubble))
 		{
-			render(app, bubble, Sprite::BubbleBase);
-		}
+			uint64_t base_mask = 0b11 & player_bubble->archetype;
+			if (base_mask == 0)
+			{
+				render(app, bubble, Sprite::BubbleBase);
+			}
 
-		else if (player_bubble->is_cat && player_bubble->is_ghost)
-		{
-			render(app, bubble, Sprite::BubbleGhostCat);
-		}
-		else if (player_bubble->is_cat)
-		{
-			render(app, bubble, Sprite::BubbleKot);
-		}
-		else if (player_bubble->is_ghost)
-		{
-			render(app, bubble, Sprite::BubbleGhost);
-		}
+			else if (player_bubble->is_cat && player_bubble->is_ghost)
+			{
+				render(app, bubble, Sprite::BubbleGhostCat);
+			}
+			else if (player_bubble->is_cat)
+			{
+				render(app, bubble, Sprite::BubbleKot);
+			}
+			else if (player_bubble->is_ghost)
+			{
+				render(app, bubble, Sprite::BubbleGhost);
+			}
 
-		if (player_bubble->has_halo)
-		{
-			render(app, bubble, Sprite::BubbleAngel);
-		}
-		if (player_bubble->has_dead_eyes)
-		{
-			render(app, bubble, Sprite::BubbleDead);
-		}
-		if (player_bubble->has_ghost_eyes)
-		{
-			render(app, bubble, Sprite::BubbleGhostEyes);
-		}
-		if (player_bubble->has_has_weird_mouth)
-		{
-			render(app, bubble, Sprite::BubbleWeirdMouth);
-		}
+			if (player_bubble->has_halo)
+			{
+				render(app, bubble, Sprite::BubbleAngel);
+			}
+			if (player_bubble->has_dead_eyes)
+			{
+				render(app, bubble, Sprite::BubbleDead);
+			}
+			if (player_bubble->has_ghost_eyes)
+			{
+				render(app, bubble, Sprite::BubbleGhostEyes);
+			}
+			if (player_bubble->has_has_weird_mouth)
+			{
+				render(app, bubble, Sprite::BubbleWeirdMouth);
+			}
 
-		if (player_bubble->has_glasses)
-		{
-			render(app, bubble, Sprite::BubbleGlasses);
-		}
-		if (player_bubble->has_sun_glasses)
-		{
-			render(app, bubble, Sprite::BubbleSunglasses);
-		}
-		if (player_bubble->has_devil_horns)
-		{
-			render(app, bubble, Sprite::BubbleDevil);
-		}
-		if (player_bubble->has_bow)
-		{
-			render(app, bubble, Sprite::BubbleBow);
-		}
-		if (player_bubble->has_tie)
-		{
-			render(app, bubble, Sprite::BubblesTie);
-		}
-		if (player_bubble->has_has_glare)
-		{
-			render(app, bubble, Sprite::BubbleGlare);
-		}
-
-		if (!animation_render(app, &player_bubble->pop_animation, &player_bubble->bubble)) {
-			animation_start(&player_bubble->pop_animation);
+			if (player_bubble->has_glasses)
+			{
+				render(app, bubble, Sprite::BubbleGlasses);
+			}
+			if (player_bubble->has_sun_glasses)
+			{
+				render(app, bubble, Sprite::BubbleSunglasses);
+			}
+			if (player_bubble->has_devil_horns)
+			{
+				render(app, bubble, Sprite::BubbleDevil);
+			}
+			if (player_bubble->has_bow)
+			{
+				render(app, bubble, Sprite::BubbleBow);
+			}
+			if (player_bubble->has_tie)
+			{
+				render(app, bubble, Sprite::BubblesTie);
+			}
+			if (player_bubble->has_has_glare)
+			{
+				render(app, bubble, Sprite::BubbleGlare);
+			}
 		}
 	}
 }
@@ -858,7 +868,7 @@ void setup(PlayerBubble* player_bubbles, size_t count)
 {
 	SDL_assert(count == 1 && "We only handle one player bubble for now");
 
-	animation_create(&player_bubbles->pop_animation, 5.0f, 11, Sprite::BubblePop1, Sprite::BubblePop2,
+	animation_create(&player_bubbles->pop_animation, 0.5f, 11, Sprite::BubblePop1, Sprite::BubblePop2,
 		Sprite::BubblePop3, Sprite::BubblePop4, Sprite::BubblePop5, Sprite::BubblePop6, Sprite::BubblePop7,
 		Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11);
 
@@ -870,7 +880,7 @@ void setup(PlayerBubble* player_bubbles, size_t count)
 	player_bubbles->bubble.paddding_ratio = 0.32f;
 	player_bubbles->bubble.click_scale = bubble_click_scale;
 	player_bubbles->bubble.duration_click = bubble_click_duration;
-
+	player_bubbles->bubble.burst_cap = 32;
 	print(player_bubbles);
 }
 
@@ -1002,9 +1012,9 @@ int main(int argc, char* argv[])
 
 	for (int index = 0; index < (int)Upgrade::Count; index++)
 	{
-		app.upgrades->cost[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "Cost/Cost", 0);
-		app.upgrades->count[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "123", 0);
-		app.upgrades->name[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "Grandma", 0);
+		app.upgrades->cost[index] = TTF_CreateText(text_engine, fonts_small[(u64)Font::JuicyFruity], "Cost/Cost", 0);
+		app.upgrades->count[index] = TTF_CreateText(text_engine, fonts_small[(u64)Font::JuicyFruity], "123", 0);
+		app.upgrades->name[index] = TTF_CreateText(text_engine, fonts_med[(u64)Font::JuicyFruity], "Grandma", 0);
 	}
 
 	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
@@ -1029,10 +1039,9 @@ int main(int argc, char* argv[])
 	setup(auto_bubbles, auto_bubble_count);
 	setup(upgrade_bubbles, upgrade_bubble_count);
 
+	post_render_update(&app, &player, &player_ui, true);
+
 	bool is_running = true;
-
-	update(&app, &player, &player_ui, true);
-
 	milliseconds tp = SDL_GetTicks();
 	while (is_running)
 	{
@@ -1067,8 +1076,6 @@ int main(int argc, char* argv[])
 		update(&app, &player, auto_bubbles, auto_bubble_count);
 		update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
 		update(&app, particles, &particle_count, particle_capacity, player_bubbles, player_bubble_count);
-		update(&app, &player, &player_ui);
-
 		// Render
 
 		SDL_SetRenderDrawColor(app.renderer, background_color.r, background_color.g, background_color.b,
@@ -1080,7 +1087,6 @@ int main(int argc, char* argv[])
 		render(&app, upgrade_bubbles, upgrade_bubble_count);
 		render(&app, player_bubbles, player_bubble_count);
 		render(&app, particles, particle_count);
-
 		render(&app, &player_ui);
 
 		SDL_FRect canvas;
@@ -1088,11 +1094,11 @@ int main(int argc, char* argv[])
 		SDL_GetWindowSize(app.window, &w, &h);
 		canvas.w = w;
 		canvas.h = h;
-		draw_stack_panel(&app, &canvas);
-
+		draw_stack_panel(&app, &canvas, &player.current_money);
 
 		SDL_RenderPresent(app.renderer);
 
+		post_render_update(&app, &player, &player_ui);
 		post_render_update(&player);
 	}
 

@@ -9,6 +9,8 @@
 
 
 inline SDL_Texture** tex;
+inline TTF_Font* fonts_small[(u64)Font::Count];
+inline TTF_Font* fonts_med[(u64)Font::Count];
 inline TTF_Font* fonts[(u64)Font::Count];
 
 struct TexturesExchangeInData
@@ -99,12 +101,17 @@ inline void load_assets(SDL_Renderer* renderer)
 			void* begin = buf + ref.offset;
 
 			SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
-			TTF_Font* font = TTF_OpenFontIO(stream, true, 42);
+			TTF_Font* font = TTF_OpenFontIO(stream, false, 42);
+			TTF_Font* font_m = TTF_OpenFontIO(stream, false, 28);
+			TTF_Font* font_s = TTF_OpenFontIO(stream, true, 18);
+
 			if (font == nullptr)
 			{
 				SDL_Log("%s", SDL_GetError());
 			}
 			fonts[i] = font;
+			fonts_med[i] = font_m;
+			fonts_small[i] = font_s;
 		}
 	}
 
