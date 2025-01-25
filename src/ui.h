@@ -77,7 +77,7 @@ struct UiState
 	UiTab tabs[(u64)Tab::Count];
 };
 
-bool button(const App* app, const SDL_FRect* btn, Sprite sprite)
+inline bool button(const App* app, const SDL_FRect* btn, Sprite sprite)
 {
 	const MouseDevice* m = &app->input.mouse;
 	SDL_FRect mouse_rect{ m->current.x, m->current.y, 1, 1 };
@@ -183,10 +183,10 @@ bool button(const App* app, const SDL_FRect* btn, Sprite sprite)
 //	}
 //}
 
-const SDL_Color afford = {120, 255, 120, 255};
-const SDL_Color no_afford = {255, 120, 120, 255};
+const SDL_Color afford = { 120, 255, 120, 255 };
+const SDL_Color no_afford = { 255, 120, 120, 255 };
 
-void draw_stack_panel(const App* app, const SDL_FRect* canvas, u64* money)
+inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, u64* money)
 {
 	SDL_FRect btn;
 	btn.w = canvas->w * 0.2f;
