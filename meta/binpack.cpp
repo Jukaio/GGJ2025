@@ -224,6 +224,9 @@ std::string generate_header(const std::vector<Asset>* assets, const char* name, 
     buf.reserve(1024);
 
     buf.append("#pragma once \n");
+    buf.append("\n");
+    buf.append("#include \"core.h\"\n");
+    
     // buf.append("using u64 = unsigned long long;\n\n");
     // buf.append("struct AssetRef \n{\n");
     // buf.append("\tu64 offset;\n");
