@@ -222,7 +222,11 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 		}
 		else
 		{
-			player_bubble->bubble.color = bubble_white_bright;
+			player_bubble->bubble.color = bubble_blue_bright;
+
+			t = SDL_sin(app->now * 0.5f) * 0.5f + 0.5f;
+			player_bubble->bubble.y = lerp(player_bubble->bubble.yMin, player_bubble->bubble.yMax,
+				Bouncee::spike_bounce(t));
 		}
 	}
 }

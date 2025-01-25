@@ -22,6 +22,10 @@ void setup(App* app, PlayerBubble* player_bubbles, size_t count)
 
 	player_bubbles->bubble.x = window_width_half;
 	player_bubbles->bubble.y = window_height_half;
+	player_bubbles->bubble.xMax = window_width_half - 256.0f * 0.25f;
+	player_bubbles->bubble.xMin = window_width_half + 256.0f * 0.25f;
+	player_bubbles->bubble.yMax = window_height_half - 256.0f * 0.5f;
+	player_bubbles->bubble.yMin = window_height_half + 256.0f * 0.5f;
 	player_bubbles->bubble.radius = 256.0f;
 	player_bubbles->max_radius = 256.0f;
 	player_bubbles->min_radius = 228.0f;

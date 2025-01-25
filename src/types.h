@@ -48,6 +48,11 @@ struct Bubble
 	float x;
 	float y;
 
+	float xMin;
+	float xMax;
+	float yMin;
+	float yMax;
+
 	float radius;
 	float paddding_ratio;
 
