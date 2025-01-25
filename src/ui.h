@@ -40,7 +40,7 @@ const Sprite UpgradeIcons[] =
 	Sprite::UpgradSoap,
 	Sprite::UpgradeDuck,
 
-	Sprite::UpgradeDuckBlue,
+	Sprite::UpgradeDuckNeon,
 	Sprite::UpgradeDuckBetter,
 	Sprite::UpgradeBathEmpty,
 	Sprite::UpgradeBath
@@ -52,7 +52,7 @@ const char* UpgradeNames[] =
     "Soap Used",
     "Soap",
     "Duck",
-    "Duck Blue",
+    "Duck Neon",
     "Duck Better",
     "Bath Empty",
     "Bath Full"
@@ -65,10 +65,63 @@ const double UpgradeCosts[] =
 	200.0,
 	800.0,
 
-	50,
-	100,
-	150,
-	200
+	1000.0,
+	2000.0,
+	5000.0,
+	10000.0
+};
+
+const double SkinCosts[] =
+{
+	100.0,
+	200.0,
+	500.0,
+	1000.0,
+	2000.0,
+	5000.0,
+	10000.0,
+	20000.0,
+	50000.0,
+	100000.0,
+	200000.0,
+	500000.0,
+	1000000.0
+};
+
+//Keep in sort!
+
+const char* SkinNames[] =
+{
+	"Glare",
+	"Basic",
+	"Angel",
+	"Devil",
+	"Eyes",
+	"Glasses",
+	"Mouth",
+	"Ghost",
+	"Dead Eyes",
+	"Sun Glasses",
+	"Bow",
+	"Tie",
+	"Kot"
+};
+
+const Sprite SkinIcons[] =
+{
+	Sprite::BubbleGlare,
+	Sprite::BubbleBase,
+	Sprite::BubbleAngel,
+	Sprite::BubbleDevil,
+	Sprite::BubbleGhostEyes,
+	Sprite::BubbleGlasses,
+	Sprite::BubbleWeirdMouth,
+	Sprite::BubbleGhost,
+	Sprite::BubbleDead,
+	Sprite::BubbleSunglasses,
+	Sprite::BubbleBow,
+	Sprite::BubblesTie,
+	Sprite::BubbleKot
 };
 
 struct Upgrades
