@@ -36,6 +36,11 @@ workspace "Engine"
         "dependencies/sdl3_ttf/lib/%{cfg.system}/%{cfg.architecture}"
 
     }
+
+    prebuildcommands
+    {
+        "cd .. && cd .. && call asset_pipeline.bat"
+    }
     
     postbuildcommands
     {
