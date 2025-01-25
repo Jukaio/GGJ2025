@@ -8,6 +8,10 @@
 #include "types.h"
 #include "ui.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
 
 constexpr size_t player_bubble_count = 1;
