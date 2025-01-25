@@ -1,5 +1,4 @@
 #include <SDL3\SDL.h>
-#include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
 
 #include "assets.h"
@@ -726,13 +725,16 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
-	TTF_Font* font = TTF_OpenFont("./fonts/cheeseburger/CHEESEBU.TTF", 48.0f);
-	TTF_TextEngine* text_engine = TTF_CreateRendererTextEngine(app.renderer);
-	TTF_Text* text = TTF_CreateText(text_engine, font, "0000000", 7);
-	TTF_SetTextColor(text, 255, 255, 255, 255);
-
 	load_assets(app.renderer);
+
+	constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
+	TTF_Font* font = TTF_OpenFont("./assets/Cheeseburger.ttf", 48.0f);
+	TTF_TextEngine* text_engine = TTF_CreateRendererTextEngine(app.renderer);
+	TTF_Text* text = TTF_CreateText(text_engine, font, "0000000", 0);
+	TTF_SetTextColor(text, 255, 255, 255, 255);
+	TTF_SetTextWrapWidth(text, 64);
+	TTF_SetTextPosition(text, 16, 16);
+
 
 	SinglePlayer player{};
 	player.base = 1;
@@ -801,7 +803,9 @@ int main(int argc, char* argv[])
 
 		render(&app, &player);
 
-		TTF_DrawRendererText(text, 0.0f, 0.0f);
+		if (!TTF_DrawRendererText(text, 64.0f, 64.0f)) {
+			SDL_Log(SDL_GetError());
+		};
 
 		SDL_RenderPresent(app.renderer);
 

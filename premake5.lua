@@ -9,8 +9,11 @@ workspace "Engine"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
+
     targetdir ("build/bin/%{cfg.buildcfg}/%{cfg.architecture}/%{prj.name}")
     objdir ("build/obj/%{cfg.buildcfg}/%{cfg.architecture}/%{prj.name}")
+    
+    debugdir "build/bin/%{cfg.buildcfg}/%{cfg.architecture}/%{prj.name}"
 
     vpaths {
         ["Headers"] = { "**.h", "**.hpp" },
@@ -34,7 +37,6 @@ workspace "Engine"
     {
         "dependencies/sdl3/lib/%{cfg.system}/%{cfg.architecture}",
         "dependencies/sdl3_ttf/lib/%{cfg.system}/%{cfg.architecture}"
-
     }
 
     prebuildcommands
@@ -45,7 +47,8 @@ workspace "Engine"
     postbuildcommands
     {
         "{COPY} %{wks.location}/../dependencies/sdl3/lib/%{cfg.system}/%{cfg.architecture}/SDL3.dll %{cfg.buildtarget.directory}",
-        "{COPY} %{wks.location}/../dependencies/sdl3_ttf/lib/%{cfg.system}/%{cfg.architecture}/SDL3_ttf.dll %{cfg.buildtarget.directory}"
+        "{COPY} %{wks.location}/../dependencies/sdl3_ttf/lib/%{cfg.system}/%{cfg.architecture}/SDL3_ttf.dll %{cfg.buildtarget.directory}",
+        "{COPY} %{wks.location}/../assets/gen %{cfg.buildtarget.directory}/assets/gen"
     }
 
     defines
