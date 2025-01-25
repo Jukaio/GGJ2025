@@ -1,8 +1,6 @@
 #include "Bouncee.h"
 #include "math.h"
 
-float PI = 3.14159265359f;
-
 float Bouncee::linear(float t)
 {
     return t;
