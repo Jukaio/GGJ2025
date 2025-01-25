@@ -354,25 +354,29 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 		particle->vx = cosf(angle) * speed;
 		particle->vy = sinf(angle) * speed;
 		particle->lifetime = (float)(rand() % 1000 + 100) / 1000.0f;
-		particle->bubble.color = color;
 
 		int num = (rand() % 10 + 1);
 		switch (num)
 		{
 		case 1:
 			particle->sprite = Sprite::ParticleKot;
+			particle->bubble.color = color;
 			break;
 		case 2:
 			particle->sprite = Sprite::ParticleGhost;
+			particle->bubble.color = bubble_white;
 			break;
 		case 3:
 			particle->sprite = Sprite::ParticleGhostCat;
+			particle->bubble.color = bubble_white;
 			break;
 		case 4:
 			particle->sprite = Sprite::ParticleClick;
+			particle->bubble.color = bubble_white;
 			break;
 		default:
 			particle->sprite = Sprite::ParticleBasic;
+			particle->bubble.color = color;
 			break;
 		}
 	}
@@ -488,12 +492,12 @@ void update(const App* app,
 				if (*particle_count + total_emit_count > particle_capacity)
 				{
 					uint32_t difference = particle_capacity - *particle_count;
-					emit_particles(app, particles + difference, mx, my, bubble_blue_bright, difference);
+					emit_particles(app, particles + difference, mx, my, bubble_pink_bright, difference);
 					*particle_count = particle_capacity;
 				}
 				else
 				{
-					emit_particles(app, particles + *particle_count, mx, my, bubble_blue_bright, total_emit_count);
+					emit_particles(app, particles + *particle_count, mx, my, bubble_pink_bright, total_emit_count);
 					*particle_count = *particle_count + total_emit_count;
 				}
 			}
@@ -795,15 +799,15 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			}
 			if (player_bubble->has_dead_eyes)
 			{
-				render(app, bubble, Sprite::BubbleDead);
+				render(app, bubble, Sprite::BubbleDead,false);
 			}
 			if (player_bubble->has_ghost_eyes)
 			{
-				render(app, bubble, Sprite::BubbleGhostEyes);
+				render(app, bubble, Sprite::BubbleGhostEyes,false);
 			}
 			if (player_bubble->has_has_weird_mouth)
 			{
-				render(app, bubble, Sprite::BubbleWeirdMouth);
+				render(app, bubble, Sprite::BubbleWeirdMouth,false);
 			}
 
 			if (player_bubble->has_glasses)
