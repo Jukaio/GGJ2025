@@ -40,6 +40,7 @@ struct SinglePlayerUI
 	TTF_Text* multiplier;
 };
 
+
 struct Bubble
 {
 	float x;
@@ -56,6 +57,14 @@ struct Bubble
 	uint32_t consecutive_clicks;
 
 	SDL_Color color;
+};
+
+struct BubbleAnimation
+{
+	Sprite sprites[16];
+	Sprite current;
+
+	uint8_t count;
 };
 
 enum PlayerBubbleBase : uint8_t
@@ -203,6 +212,11 @@ struct UpgradeBubble
 };
 
 float lerp(float a, float b, float t) { return a + (b - a) * t; }
+//
+// void animation_add(BubbleAnimation* animation, )
+//{
+//
+//}
 
 inline float get_legal_radius(Bubble* bubble)
 {
@@ -690,12 +704,12 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 
 void render(App* app, Particle* particles, size_t count)
 {
-    for (size_t index = 0; index < count; index++)
-    {
-        const Particle* particle = &particles[index];
-        const Bubble* bubble = &particle->bubble;
+	for (size_t index = 0; index < count; index++)
+	{
+		const Particle* particle = &particles[index];
+		const Bubble* bubble = &particle->bubble;
 		render(app, bubble, particle->sprite);
-    }
+	}
 }
 
 void render(App* app, UpgradeBubble* bubbles, size_t count)
@@ -710,7 +724,8 @@ void render(App* app, UpgradeBubble* bubbles, size_t count)
 			float w, h;
 			SDL_GetTextureSize(texture, &w, &h);
 			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_FRect dst = SDL_FRect{ upgrade_bubble->x, upgrade_bubble->y, upgrade_bubble->width, upgrade_bubble->height };
+			SDL_FRect dst =
+				SDL_FRect{ upgrade_bubble->x, upgrade_bubble->y, upgrade_bubble->width, upgrade_bubble->height };
 
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
@@ -735,7 +750,6 @@ void render(App* app, SinglePlayerUI* ui)
 		SDL_Log(SDL_GetError());
 	};
 }
-
 
 constexpr int window_width = 1920;
 constexpr int window_height = 1080;
@@ -858,6 +872,7 @@ int main(int argc, char* argv[])
 	SDL_zero(*app.ui);
 	app.upgrades = (Upgrades*)SDL_malloc(sizeof(Upgrades));
 	SDL_zero(*app.upgrades);
+
 	app.tick_frequency = 0.25f;
 	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
 	if (app.window == nullptr)
@@ -885,6 +900,11 @@ int main(int argc, char* argv[])
 	SinglePlayerUI player_ui{};
 	player_ui.score = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
 	TTF_SetTextColor(player_ui.score, 255, 255, 255, 255);
+
+	for (int index = 0; index < (int)Upgrade::Count; index++)
+	{
+		app.upgrades->labels[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
+	}
 
 	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
 	player_ui.multiplier = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);

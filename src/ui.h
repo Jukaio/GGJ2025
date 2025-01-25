@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL3/SDL_render.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include "assets.h"
 #include "core.h"
@@ -9,8 +10,8 @@
 constexpr float UiTabWidthScale = 0.06;
 constexpr float UiTabHeightScale = 0.08;
 
-const SDL_Color btn_over_tint = {200, 200, 180};
-const SDL_Color btn_press_tint = {100, 100, 120};
+const SDL_Color btn_over_tint = { 200, 200, 180 };
+const SDL_Color btn_press_tint = { 100, 100, 120 };
 
 struct Button
 {
@@ -23,7 +24,6 @@ enum class Upgrade
 	BubbleDoubler2,
 	BubbleTripler1,
 	BubbleTriple2,
-
 
 	AutoBubble1,
 	AutoBubble2,
@@ -49,6 +49,8 @@ const double UpgradeCosts[] =
 struct Upgrades
 {
 	int owned_upgrades[(int)Upgrade::Count];
+
+	TTF_Text* labels[(int)Upgrade::Count];
 };
 
 enum class Tab
@@ -146,8 +148,8 @@ void draw_upgrades_tab(const App* app, UiTab* tab, const SDL_FRect* canvas)
 	for (int i = 0; i < (int)Upgrade::Count; ++i)
 	{
 		SDL_FRect btn;
-		btn.x = bg.x + bg.w * 0.1 + (i>3) * bg.w * 0.4;
-		btn.y = bg.y + bg.h * 0.1 + ((i&0b11) * bg.h * 0.2);
+		btn.x = bg.x + bg.w * 0.1 + (i > 3) * bg.w * 0.4;
+		btn.y = bg.y + bg.h * 0.1 + ((i & 0b11) * bg.h * 0.2);
 		btn.w = bg.w * 0.1;
 		btn.h = bg.w * 0.1;
 
@@ -155,6 +157,13 @@ void draw_upgrades_tab(const App* app, UiTab* tab, const SDL_FRect* canvas)
 		{
 			app->upgrades->owned_upgrades[i] += 1;
 		}
+
+		float offset_x = (btn.w * 0.1f) + btn.w;
+		float offset_y = btn.h * 0.25f;
+		if (!TTF_DrawRendererText(app->upgrades->labels[i], btn.x + offset_x, btn.y + offset_y))
+		{
+			SDL_Log(SDL_GetError());
+		};
 	}
 
 }
