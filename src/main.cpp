@@ -116,10 +116,10 @@ struct PlayerBubble
 		uint64_t archetype;
 		struct
 		{
-			uint8_t e00 : 1;
-			uint8_t e01 : 1;
-			uint8_t e02 : 1;
-			uint8_t e03 : 1;
+			uint8_t is_basic: 1;
+			uint8_t is_cat : 1;
+			uint8_t has_sun_glasses : 1;
+			uint8_t has_glasses : 1;
 			uint8_t e04 : 1;
 			uint8_t e05 : 1;
 			uint8_t e06 : 1;
@@ -519,7 +519,7 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 
 		SDL_Color c = bubble->color;
 
-		SDL_Texture* texture = tex[(uint64_t)Sprite::TestBubble2];
+		SDL_Texture* texture = tex[(uint64_t)Sprite::BubbleBase];
 		float w, h;
 		SDL_GetTextureSize(texture, &w, &h);
 		SDL_FRect src = SDL_FRect{ 0, 0, w, h };
@@ -549,7 +549,7 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 		{
 			SDL_Color c = bubble->color;
 
-			SDL_Texture* texture = tex[(uint64_t)Sprite::TestBubble2];
+			SDL_Texture* texture = tex[(uint64_t)Sprite::BubbleKot];
 			float w, h;
 			SDL_GetTextureSize(texture, &w, &h);
 			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
@@ -583,8 +583,8 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	constexpr int window_width = 1800;
-	constexpr int window_height = 1200;
+	constexpr int window_width = 1920;
+	constexpr int window_height = 1080;
 
 	constexpr int window_width_half = window_width / 2;
 	constexpr int window_height_half = window_height / 2;
