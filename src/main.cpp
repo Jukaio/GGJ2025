@@ -576,6 +576,16 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 	for (size_t index = 0; index < count; index++)
 	{
 		const Bubble* bubble = &bubbles[index].bubble;
+		{
+			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+			float w, h;
+			SDL_GetTextureSize(texture, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+			SDL_FRect dst = SDL_FRect{ bubble->x, bubble->y, bubble->radius * 4.0f, bubble->radius * 4.0f };
+			dst.x -= bubble->radius * 2.0f;
+			dst.y -= bubble->radius * 2.0f;
+			SDL_RenderTexture(app->renderer, texture, &src, &dst);
+		}
 
 		SDL_Color c = bubble->color;
 
@@ -602,8 +612,13 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 			SDL_Color c = auto_bubble->color;
 			SDL_SetRenderDrawColor(app->renderer, c.r, c.g, c.b, c.a);
 
+			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+			float w, h;
+			SDL_GetTextureSize(texture, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 			SDL_FRect dst = SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
-			SDL_RenderRect(app->renderer, &dst);
+
+			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
 		{
@@ -632,11 +647,13 @@ void render(App* app, UpgradeBubble* bubbles, size_t count)
 		const Bubble* bubble = &auto_bubble->bubble;
 
 		{
-			SDL_Color c = auto_bubble->color;
-			SDL_SetRenderDrawColor(app->renderer, c.r, c.g, c.b, c.a);
-
+			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+			float w, h;
+			SDL_GetTextureSize(texture, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 			SDL_FRect dst = SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
-			SDL_RenderRect(app->renderer, &dst);
+
+			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
 		{
