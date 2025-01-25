@@ -183,32 +183,41 @@ bool button(const App* app, const SDL_FRect* btn, Sprite sprite)
 //	}
 //}
 
+const SDL_Color afford = {120, 255, 120, 255};
+const SDL_Color no_afford = {255, 120, 120, 255};
 
-void draw_stack_panel(const App* app, const SDL_FRect* canvas)
+void draw_stack_panel(const App* app, const SDL_FRect* canvas, u64* money)
 {
 	SDL_FRect btn;
-	btn.w = canvas->w * 0.2;
-	btn.h = canvas->h * 0.08;
+	btn.w = canvas->w * 0.2f;
+	btn.h = canvas->h * 0.08f;
 	btn.x = canvas->w - btn.w;
-	btn.y = canvas->h * 0.3;
+	btn.y = canvas->h * 0.3f;
 
-	float off = btn.h + 0.1* btn.h;
+	float off = btn.h + 0.1f * btn.h;
 
 	for (int i = 0; i < (int)Upgrade::Count; ++i)
 	{
-		if (button(app, &btn, app->upgrades->sprite[i]))
+		double cost = UpgradeCosts[i];
+		bool affordable = (double)*money >= cost;
+		if (button(app, &btn, app->upgrades->sprite[i]) && affordable)
 		{
+			*money -= (u64)cost;
 			++app->upgrades->owned_upgrades[i];
 		}
 		char buf[64];
-		int len = SDL_snprintf(buf, 64, "Cost : %d", UpgradeCosts[i]);
+		int len = SDL_snprintf(buf, 64, "Cost : %.0f", cost);
+
+		const SDL_Color* c = affordable ? &afford : &no_afford;
+		TTF_SetTextColor(app->upgrades->cost[i], c->r, c->g, c->b, c->a);
 		TTF_SetTextString(app->upgrades->cost[i], buf, len);
 
 		len = SDL_snprintf(buf, 64, "%d", app->upgrades->owned_upgrades[i]);
 		TTF_SetTextString(app->upgrades->count[i], buf, len);
 
-		TTF_DrawRendererText(app->upgrades->cost[i], btn.x + btn.w * 0.1, btn.y + btn.h * 0.15);
-		TTF_DrawRendererText(app->upgrades->count[i], btn.x + btn.w * 0.8, btn.y + btn.h * 0.15);
+		TTF_DrawRendererText(app->upgrades->name[i], btn.x + btn.w * 0.1f, btn.y + btn.h * 0.15f);
+		TTF_DrawRendererText(app->upgrades->cost[i], btn.x + btn.w * 0.1f, btn.y + btn.h * 0.6f);
+		TTF_DrawRendererText(app->upgrades->count[i], btn.x + btn.w * 0.75f, btn.y + btn.h * 0.2f);
 
 		btn.y += off;
 	}
