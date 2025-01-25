@@ -94,6 +94,9 @@ struct PlayerBubble
 
 	BubbleAnimation pop_animation;
 
+	float min_radius;
+	float max_radius;
+
 	union
 	{
 		uint64_t archetype;
@@ -545,6 +548,9 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 		MouseState const* state = &app->input.mouse.current;
 		float distance = math_distance(state->x, state->y, bubble->bubble.x, bubble->bubble.y);
 
+		float t = SDL_sin( app->now * 0.5f ) * 0.5f + 0.5f;
+		bubble->bubble.radius = lerp( bubble->min_radius, bubble->max_radius, Bouncee::in_elastic( t ) + Bouncee::out_elastic( t ) );
+
 		if (distance < get_legal_radius(&bubble->bubble) || is_space_press)
 		{
 			bubble->bubble.color = bubble_blue;
@@ -702,9 +708,9 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			float w, h;
 			SDL_GetTextureSize(texture, &w, &h);
 			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_FRect dst = SDL_FRect{ bubble->x, bubble->y, 256.0f * 4.0f, 256.0f * 4.0f };
-			dst.x -= 256.0f * 2.0f;
-			dst.y -= 256.0f * 2.0f;
+			SDL_FRect dst = SDL_FRect{ bubble->x, bubble->y, player_bubble->max_radius * 4.0f, player_bubble->max_radius * 4.0f };
+			dst.x -= player_bubble->max_radius * 2.0f;
+			dst.y -= player_bubble->max_radius * 2.0f;
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
@@ -869,6 +875,8 @@ void setup(PlayerBubble* player_bubbles, size_t count)
 	player_bubbles->bubble.x = window_width_half;
 	player_bubbles->bubble.y = window_height_half;
 	player_bubbles->bubble.radius = 256.0f;
+	player_bubbles->max_radius = 256.0f;
+	player_bubbles->min_radius = 228.0f;
 	player_bubbles->bubble.paddding_ratio = 0.32f;
 	player_bubbles->bubble.click_scale = bubble_click_scale;
 	player_bubbles->bubble.duration_click = bubble_click_duration;
