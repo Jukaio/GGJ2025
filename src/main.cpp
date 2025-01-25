@@ -1,9 +1,11 @@
+#include <SDL_mixer.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+
 #include <stdio.h>
 
-#include "Bouncee.h"
 #include "assets.h"
+#include "Bouncee.h"
 #include "core.h"
 typedef uint64_t milliseconds;
 
@@ -882,7 +884,7 @@ int main(int argc, char* argv[])
 		update(&app, particles, particle_count);
 
 		// Render
-		
+
 		SDL_SetRenderDrawColor(app.renderer, background_color.r, background_color.g, background_color.b,
 			background_color.a);
 

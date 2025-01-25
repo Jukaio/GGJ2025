@@ -30,13 +30,19 @@ workspace "Engine"
     {
         "src",
         "dependencies/sdl3/include",
-        "dependencies/sdl3_ttf/include"
+        "dependencies/sdl3_ttf/include",
+
+        "dependencies/sdl3_image/include",
+        "dependencies/sdl3_mixer/include"
     }
 
     libdirs
     {
         "dependencies/sdl3/lib/%{cfg.system}/%{cfg.architecture}",
-        "dependencies/sdl3_ttf/lib/%{cfg.system}/%{cfg.architecture}"
+        "dependencies/sdl3_ttf/lib/%{cfg.system}/%{cfg.architecture}",
+
+        "dependencies/sdl3_image/lib/%{cfg.system}/%{cfg.architecture}",
+        "dependencies/sdl3_mixer/lib/%{cfg.system}/%{cfg.architecture}"
     }
 
     prebuildcommands
@@ -61,7 +67,9 @@ workspace "Engine"
     links
     {
         "SDL3.lib",
-        "SDL3_ttf.lib"
+        "SDL3_ttf.lib",
+        "SDL3_image.lib",
+        "SDL3_mixer.lib"
     }
 
     flags { "MultiProcessorCompile" }

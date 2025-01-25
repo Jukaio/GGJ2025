@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SDL_image.h>
 #include <SDL3\SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
@@ -15,7 +16,7 @@ struct TexturesExchangeInData
 {
 	SDL_Renderer* renderer;
 	SDL_Surface* queried_surfaces[(u64)Sprite::Count];
-	unsigned char* png_source[(u64)Sprite::Count];
+	SDL_IOStream* png_source[(u64)Sprite::Count];
 };
 
 inline void load_assets_exchange(void* data)
@@ -26,8 +27,8 @@ inline void load_assets_exchange(void* data)
 	{
 		SDL_Surface* srf = in_data->queried_surfaces[i];
 		tex[i] = SDL_CreateTextureFromSurface(in_data->renderer, srf);
-		stbi_image_free(in_data->png_source[i]);
-		if (tex[i] == nullptr)
+
+		if (!SDL_CloseIO(in_data->png_source[i]) || tex[i] == nullptr)
 		{
 			SDL_Log("%s", SDL_GetError());
 		}
@@ -61,14 +62,13 @@ inline int load_assets_from_gen(void* data)
 	{
 		AssetRef ref = g_sprite_offsets[i];
 
-		int x;
-		int y;
-		int channels;
-		const unsigned char* buf = global_buffer;
-		unsigned char* png = stbi_load_from_memory(buf + ref.offset, ref.size, &x, &y, &channels, 4);
+		unsigned char* buf = global_buffer;
+		void* begin = buf + ref.offset;
 
-		SDL_Surface* srf = SDL_CreateSurfaceFrom(x, y, SDL_PIXELFORMAT_RGBA32, (void*)png, x * 4);
-		in_data->png_source[i] = png;
+		SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
+		SDL_Surface* srf = IMG_LoadPNG_IO(stream);
+
+		in_data->png_source[i] = stream;
 		in_data->queried_surfaces[i] = srf;
 	}
 
@@ -92,7 +92,6 @@ inline void load_assets(SDL_Renderer* renderer)
 
 			unsigned char* buf = global_buffer;
 			void* begin = buf + ref.offset;
-			//SDL_IOFromMem
 
 			SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
 			TTF_Font* font = TTF_OpenFontIO(stream, true, 42);
