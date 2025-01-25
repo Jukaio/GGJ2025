@@ -18,6 +18,7 @@ constexpr SDL_Color bubble_blue_bright = SDL_Color{ 198, 231, 228, 255 };
 constexpr SDL_Color bubble_blue = SDL_Color{ 129, 191, 183, 255 };
 constexpr SDL_Color bubble_blue_dark = SDL_Color{ 34, 81, 90, 255 };
 constexpr SDL_Color bubble_white = SDL_Color{ 214, 250, 249, 255 };
+constexpr SDL_Color bubble_white_bright = SDL_Color{ 255, 255, 255, 255 };
 
 struct SinglePlayer
 {
@@ -560,7 +561,6 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 
 		if (distance < get_legal_radius(&player_bubble->bubble) || is_space_press)
 		{
-			player_bubble->bubble.color = bubble_blue;
 
 			if (is_player_clicking || is_space_press)
 			{
@@ -595,11 +595,17 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 
 				player->current_money = player->current_money + (player->current_base * player->current_multiplier);
 				player_bubble->bubble.time_point_last_clicked = app->now;
+
+				player_bubble->bubble.color = bubble_blue_dark;
+			}
+			else
+			{
+				player_bubble->bubble.color = bubble_blue;
 			}
 		}
 		else
 		{
-			player_bubble->bubble.color = bubble_blue_bright;
+			player_bubble->bubble.color = bubble_white_bright;
 		}
 	}
 }
@@ -624,8 +630,6 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 
 		if (distance < get_legal_radius(&bubble->bubble))
 		{
-			bubble->bubble.color = bubble_blue;
-
 			if (is_player_clicking)
 			{
 				Mix_PlayChannel(-1, sounds[(u64)Audio::MildPop], 0);
@@ -633,11 +637,16 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 				player->current_money = player->current_money - bubble->inc.cost;
 				bubble->inc.amount = bubble->inc.amount + 1;
 				bubble->bubble.time_point_last_clicked = app->now;
+				bubble->bubble.color = bubble_blue_dark;
+			}
+			else
+			{
+				bubble->bubble.color = bubble_blue;
 			}
 		}
 		else
 		{
-			bubble->bubble.color = bubble_blue_bright;
+			bubble->bubble.color = bubble_white_bright;
 		}
 	}
 }
@@ -662,8 +671,6 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 
 		if (distance < get_legal_radius(&bubble->bubble))
 		{
-			bubble->bubble.color = bubble_blue;
-
 			if (is_player_clicking)
 			{
 				Mix_PlayChannel(-1, sounds[(u64)Audio::MildPop], 0);
@@ -673,11 +680,17 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 				player->current_multiplier = player->current_multiplier + bubble->inc.multiplier_bonus;
 
 				bubble->bubble.time_point_last_clicked = app->now;
+				bubble->bubble.color = bubble_blue_dark;
+			}
+			else
+			{
+				bubble->bubble.color = bubble_blue;
+
 			}
 		}
 		else
 		{
-			bubble->bubble.color = bubble_blue_bright;
+			bubble->bubble.color = bubble_white_bright;
 		}
 	}
 }
@@ -799,7 +812,7 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			}
 			if (player_bubble->has_sun_glasses)
 			{
-				render(app, bubble, Sprite::BubbleSunglasses, false);
+				render(app, bubble, Sprite::BubbleSunglassesPink, false);
 			}
 			if (player_bubble->has_devil_horns)
 			{
