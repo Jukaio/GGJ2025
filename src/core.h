@@ -15,7 +15,7 @@ struct AssetRef
     u64 size;
 };
 
-
+#if _WIN32
 #define ASSERT(condition, msg)                                                  \
     do {                                                                        \
         if (!(condition)) {                                                     \
@@ -45,7 +45,10 @@ struct AssetRef
             __debugbreak();                                                     \
         }                                                                       \
     } while (0)
-
+#else
+#define ASSERT(...)
+#define ASSERT_FMT(...)
+#endif
 
 struct KeyboardState
 {
