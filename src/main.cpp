@@ -10,7 +10,6 @@
 #include "ui.h"
 typedef uint64_t milliseconds;
 
-
 constexpr SDL_Color background_color = SDL_Color{ 129, 191, 183, 255 };
 constexpr SDL_Color bubble_pink_bright = SDL_Color{ 255, 212, 222, 255 };
 constexpr SDL_Color bubble_pink = SDL_Color{ 243, 162, 190, 255 };
@@ -19,7 +18,6 @@ constexpr SDL_Color bubble_blue_bright = SDL_Color{ 198, 231, 228, 255 };
 constexpr SDL_Color bubble_blue = SDL_Color{ 129, 191, 183, 255 };
 constexpr SDL_Color bubble_blue_dark = SDL_Color{ 34, 81, 90, 255 };
 constexpr SDL_Color bubble_white = SDL_Color{ 214, 250, 249, 255 };
-
 
 struct SinglePlayer
 {
@@ -151,6 +149,7 @@ struct Particle
 	float vx;
 	float vy;
 	float lifetime;
+	Sprite sprite;
 };
 
 struct AutoBubbleIncremental
@@ -294,7 +293,7 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 	{
 		float angle = (float)(rand()) / RAND_MAX * 2.0f * PI;
 		float speed = (float)(rand()) / RAND_MAX * 220.0f + 125.0f;
-		float radius = (float)(rand()) / RAND_MAX * 48 + 8.0f;
+		float radius = (float)(rand()) / RAND_MAX * 30 + 8.0f;
 
 		Particle* particle = &particles[i];
 		particle->bubble.x = (float)x;
@@ -304,6 +303,26 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 		particle->vy = sinf(angle) * speed;
 		particle->lifetime = 1.0f;
 		particle->bubble.color = color;
+
+		int num = (rand() % 10 + 1);
+		switch (num)
+		{
+		case 1:
+			particle->sprite = Sprite::ParticleKot;
+			break;
+		case 2:
+			particle->sprite = Sprite::ParticleGhost;
+			break;
+		case 3:
+			particle->sprite = Sprite::ParticleGhostCat;
+			break;
+		case 4:
+			particle->sprite = Sprite::ParticleClick;
+			break;
+		default:
+			particle->sprite = Sprite::ParticleBasic;
+			break;
+		}
 	}
 }
 
@@ -324,7 +343,6 @@ void update(const App* app,
 		particle->lifetime -= app->delta_time;
 	}
 
-
 	float mx = app->input.mouse.current.x;
 	float my = app->input.mouse.current.y;
 	for (size_t index = 0; index < player_count; index++)
@@ -336,7 +354,6 @@ void update(const App* app,
 		{
 			player_bubble->bubble.consecutive_clicks = 0;
 		}
-
 
 		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
 		if (distance < get_legal_radius(&player_bubble->bubble))
@@ -549,18 +566,21 @@ void post_render_update(SinglePlayer* player)
 	player->previous_multiplier = player->current_multiplier;
 }
 
-void render(App* app, Bubble const* bubble, Sprite sprite)
+void render(App* app, const Bubble* bubble, Sprite sprite, float offset_x = 0.0f, float offset_y = 0.0f)
 {
 	SDL_Color c = bubble->color;
 
 	SDL_Texture* texture = tex[(uint64_t)sprite];
 	SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+	SDL_SetTextureAlphaMod(texture, c.a);
 
 	float w, h;
 	SDL_GetTextureSize(texture, &w, &h);
 	SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 
 	SDL_FRect dst = get_frect(app, bubble);
+	dst.x = dst.x + offset_x;
+	dst.y = dst.y + offset_y;
 	SDL_RenderTexture(app->renderer, texture, &src, &dst);
 }
 
@@ -664,67 +684,38 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
-		{
-			SDL_Color c = bubble->color;
-
-			SDL_Texture* texture = tex[(uint64_t)Sprite::BubbleKot];
-			float w, h;
-			SDL_GetTextureSize(texture, &w, &h);
-			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-
-			SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
-
-			SDL_FRect dst = get_frect(app, bubble);
-			dst.x = dst.x + auto_bubble->x;
-			dst.y = dst.y + auto_bubble->y;
-			SDL_RenderTexture(app->renderer, texture, &src, &dst);
-		}
+		render(app, bubble, Sprite::BubbleKot, auto_bubble->x, auto_bubble->y);
 	}
 }
 
 void render(App* app, Particle* particles, size_t count)
 {
-	for (size_t index = 0; index < count; index++)
-	{
-		const Particle* particle = &particles[index];
-		const Bubble* bubble = &particle->bubble;
-
-		render(app, bubble, Sprite::BubbleKot);
-	}
+    for (size_t index = 0; index < count; index++)
+    {
+        const Particle* particle = &particles[index];
+        const Bubble* bubble = &particle->bubble;
+		render(app, bubble, particle->sprite);
+    }
 }
 
 void render(App* app, UpgradeBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
-		const UpgradeBubble* auto_bubble = &bubbles[index];
-		const Bubble* bubble = &auto_bubble->bubble;
+		const UpgradeBubble* upgrade_bubble = &bubbles[index];
+		const Bubble* bubble = &upgrade_bubble->bubble;
 
 		{
 			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
 			float w, h;
 			SDL_GetTextureSize(texture, &w, &h);
 			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_FRect dst = SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
+			SDL_FRect dst = SDL_FRect{ upgrade_bubble->x, upgrade_bubble->y, upgrade_bubble->width, upgrade_bubble->height };
 
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
-		{
-			SDL_Color c = bubble->color;
-
-			SDL_Texture* texture = tex[(uint64_t)Sprite::BubbleGhost];
-			float w, h;
-			SDL_GetTextureSize(texture, &w, &h);
-			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-
-			SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
-
-			SDL_FRect dst = get_frect(app, bubble);
-			dst.x = dst.x + auto_bubble->x;
-			dst.y = dst.y + auto_bubble->y;
-			SDL_RenderTexture(app->renderer, texture, &src, &dst);
-		}
+		render(app, bubble, Sprite::BubbleGhost, upgrade_bubble->x, upgrade_bubble->y);
 	}
 }
 
