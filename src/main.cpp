@@ -460,6 +460,10 @@ void update(const App* app,
 		float mx = is_space_press ? player_bubble->bubble.x : app->input.mouse.current.x;
 		float my = is_space_press ? player_bubble->bubble.y : app->input.mouse.current.y;
 
+		if (player_bubble->pop_animation.state == BubbleAnimationStatePlaying) {
+			continue;
+		}
+
 		float time_difference = app->now - player_bubble->bubble.time_point_last_clicked;
 		if (time_difference > 1.0f)
 		{
@@ -548,8 +552,8 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 		MouseState const* state = &app->input.mouse.current;
 		float distance = math_distance(state->x, state->y, bubble->bubble.x, bubble->bubble.y);
 
-		float t = SDL_sin( app->now * 0.5f ) * 0.5f + 0.5f;
-		bubble->bubble.radius = lerp( bubble->min_radius, bubble->max_radius, Bouncee::in_elastic( t ) + Bouncee::out_elastic( t ) );
+		float t = SDL_sin(app->now * 0.5f) * 0.5f + 0.5f;
+		bubble->bubble.radius = lerp(bubble->min_radius, bubble->max_radius, Bouncee::in_elastic(t) + Bouncee::out_elastic(t));
 
 		if (distance < get_legal_radius(&bubble->bubble) || is_space_press)
 		{
@@ -868,11 +872,11 @@ void setup(PlayerBubble* player_bubbles, size_t count)
 {
 	SDL_assert(count == 1 && "We only handle one player bubble for now");
 
-	animation_create(&player_bubbles->pop_animation, 1.0f, 22, Sprite::BubblePop1, Sprite::BubblePop2,
+	animation_create(&player_bubbles->pop_animation, 1.75f, 24, Sprite::BubblePop1, Sprite::BubblePop2,
 		Sprite::BubblePop3, Sprite::BubblePop4, Sprite::BubblePop5, Sprite::BubblePop6, Sprite::BubblePop7,
 		Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11, NO_SPRITE,
 		NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE,
-		NO_SPRITE, NO_SPRITE);
+		NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE);
 
 	player_bubbles->bubble.x = window_width_half;
 	player_bubbles->bubble.y = window_height_half;
@@ -883,7 +887,7 @@ void setup(PlayerBubble* player_bubbles, size_t count)
 	player_bubbles->bubble.click_scale = bubble_click_scale;
 	player_bubbles->bubble.duration_click = bubble_click_duration;
 	player_bubbles->bubble.burst_cap = 32;
-	print(player_bubbles);
+	//(player_bubbles);
 }
 
 void setup(AutoBubble* auto_bubbles, size_t auto_bubble_count)
@@ -921,8 +925,8 @@ void setup(AutoBubble* auto_bubbles, size_t auto_bubble_count)
 		bubble->click_scale = bubble_click_scale;
 		bubble->duration_click = bubble_click_duration;
 
-		print(auto_bubble);
-		SDL_Log("");
+		//print(auto_bubble);
+		//SDL_Log("");
 	}
 }
 
@@ -962,7 +966,7 @@ void setup(UpgradeBubble* upgrade_bubbles, size_t auto_bubble_count)
 
 		upgrade_bubble->inc = config;
 
-		SDL_Log("");
+		//SDL_Log("");
 	}
 }
 
@@ -970,11 +974,17 @@ void setup(UpgradeBubble* upgrade_bubbles, size_t auto_bubble_count)
 int main(int argc, char* argv[])
 {
 	platform_init();
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
 	if (!TTF_Init())
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not init TTF: %s\n", SDL_GetError());
+		return -1;
+	}
+
+	if (!Mix_Init(MIX_INIT_WAVPACK))
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not init WAV: %s\n", SDL_GetError());
 		return -1;
 	}
 
@@ -1111,6 +1121,8 @@ int main(int argc, char* argv[])
 	SDL_DestroyRenderer(app.renderer);
 
 	SDL_DestroyWindow(app.window);
+
+	Mix_Quit();
 
 	TTF_Quit();
 

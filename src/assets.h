@@ -1,17 +1,22 @@
 #pragma once
 
 #include <SDL_image.h>
+#include <SDL_mixer.h>
 #include <SDL3\SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
+#include "gen/audio.h"
 #include "gen/fonts.h"
 #include "gen/sprites.h"
-
 
 inline SDL_Texture** tex;
 inline TTF_Font* fonts_small[(u64)Font::Count];
 inline TTF_Font* fonts_med[(u64)Font::Count];
 inline TTF_Font* fonts[(u64)Font::Count];
+inline Mix_Chunk* sounds[(u64)Audio::Count];
+
+inline SDL_AudioSpec audio_spec;
+
 
 #define NO_SPRITE Sprite::Count
 
@@ -119,6 +124,46 @@ inline void load_assets(SDL_Renderer* renderer)
 			fonts_small[i] = font_s;
 		}
 	}
+
+	// Load Audio
+	{
+		SDL_AudioSpec spec;
+		spec.freq = MIX_DEFAULT_FREQUENCY;
+		spec.format = MIX_DEFAULT_FORMAT;
+		spec.channels = MIX_DEFAULT_CHANNELS;
+
+		if (!Mix_OpenAudio(0, &spec)) {
+			SDL_Log("Couldn't open audio: %s\n", SDL_GetError());
+		}
+		else {
+			Mix_QuerySpec(&spec.freq, &spec.format, &spec.channels);
+			SDL_Log("Opened audio at %d Hz %d bit%s %s", spec.freq,
+				(spec.format & 0xFF),
+				(SDL_AUDIO_ISFLOAT(spec.format) ? " (float)" : ""),
+				(spec.channels > 2) ? "surround" :
+				(spec.channels > 1) ? "stereo" : "mono");
+		}
+		size_t size;
+		unsigned char* global_buffer = (unsigned char*)SDL_LoadFile(g_audio_path, &size);
+		u64 font_count = (u64)Audio::Count;
+		for (u64 i = 0; i < (u64)Audio::Count; ++i)
+		{
+			AssetRef ref = g_audio_offsets[i];
+
+			unsigned char* buf = global_buffer;
+			void* begin = buf + ref.offset;
+
+			SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
+			Mix_Chunk* chunk = Mix_LoadWAV_IO(stream, true);
+
+			if (chunk == nullptr)
+			{
+				SDL_Log("%s", SDL_GetError());
+			}
+			sounds[i] = chunk;
+		}
+	}
+
 
 	// Load textures
 	u64 sprite_count = (u64)Sprite::Count + 1; // Empty texture in count
