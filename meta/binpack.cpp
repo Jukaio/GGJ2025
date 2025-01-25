@@ -223,12 +223,13 @@ std::string generate_header(const std::vector<Asset>* assets, const char* name, 
     std::string buf;
     buf.reserve(1024);
 
-    buf.append("#pragma once \n\n");
-    buf.append("using u64 = unsigned long long;\n\n");
-    buf.append("struct AssetRef \n{\n");
-    buf.append("\tu64 offset;\n");
-    buf.append("\tu64 size;\n");
-    buf.append("};\n");
+    buf.append("#pragma once \n");
+    // buf.append("using u64 = unsigned long long;\n\n");
+    // buf.append("struct AssetRef \n{\n");
+    // buf.append("\tu64 offset;\n");
+    // buf.append("\tu64 size;\n");
+    // buf.append("};\n");
+
     buf.append("\n");
 
     u64 offset = 0;
