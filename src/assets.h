@@ -44,22 +44,23 @@ inline int load_assets_from_gen(void* data)
 
 	for (u64 i = 0; i < (u64)Sprite::Count; ++i)
 	{
-		AssetRef ref = g_spriteOffsets[i];
+		//AssetRef ref = g_sprite_offsets[i];
 
-		int x;
-		int y;
-		int channels;
-		const unsigned char* buf = g_spriteData;
-		unsigned char* png = stbi_load_from_memory(buf + ref.offset, ref.size, &x, &y, &channels, 4);
+		//int x;
+		//int y;
+		//int channels;
+		////const unsigned char* buf = ;
+		//unsigned char* png = stbi_load_from_memory(buf + ref.offset, ref.size, &x, &y, &channels, 4);
 
-		SDL_Surface* srf = SDL_CreateSurfaceFrom(x, y, SDL_PIXELFORMAT_RGBA32, (void*)png, x * 4);
-		in_data->png_source[i] = png;
-		in_data->queried_surfaces[i] = srf;
+		//SDL_Surface* srf = SDL_CreateSurfaceFrom(x, y, SDL_PIXELFORMAT_RGBA32, (void*)png, x * 4);
+		//in_data->png_source[i] = png;
+		//in_data->queried_surfaces[i] = srf;
 	}
 
 	SDL_RunOnMainThread(load_assets_exchange, in_data, true);
 
 	SDL_free(in_data);
+
 
 	return 0;
 }

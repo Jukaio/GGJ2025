@@ -6,12 +6,14 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <chrono>
 
-const char* asset_root = "../assets";
-const char* src_root = "../src/";
+const char* asset_root = "assets/";
+const char* src_root = "src/";
 
 using u64 = unsigned long long;
 using u32 = unsigned int;
+using u8 = unsigned char;
 
 struct Buffer
 {
@@ -34,8 +36,6 @@ Buffer alloc(u64 size)
 
 	return buffer;
 }
-
-
 
 Buffer read_file(const char* path)
 {
@@ -82,7 +82,6 @@ struct Assets
 	std::vector<Asset> fonts;
 };
 
-
 void load_assets(Assets* inout_assets)
 {
 	std::filesystem::path asset_path(asset_root);
@@ -103,12 +102,25 @@ void load_assets(Assets* inout_assets)
 		Buffer buffer = read_file(entry.path().string().c_str());
 		if (buffer.mem)
 		{
-            Asset& asset = inout_assets->images.emplace_back();
-            asset.name = entry.path().filename().stem().string();
-            asset.name.erase(std::remove(asset.name.begin(), asset.name.end(), ' '), asset.name.end());
-            asset.name.erase(std::remove(asset.name.begin(), asset.name.end(), '-'), asset.name.end());
-            asset.buffer = buffer;
-			printf("Loaded image: %s with size %lld\n", entry.path().filename().string().c_str(), asset.buffer.size);
+            Asset* asset = nullptr;
+            if( entry.path().extension() == ".png")
+            {
+                asset = &inout_assets->images.emplace_back();
+            }
+
+            if(entry.path().extension() == ".ttf")
+            {
+                asset = &inout_assets->fonts.emplace_back();
+            }
+            
+            if(asset)
+            {
+                asset->name = entry.path().filename().stem().string();
+                asset->name.erase(std::remove(asset->name.begin(), asset->name.end(), ' '), asset->name.end());
+                asset->name.erase(std::remove(asset->name.begin(), asset->name.end(), '-'), asset->name.end());
+                asset->buffer = buffer;
+                printf("Loaded asset: %s with size %lld\n", entry.path().filename().string().c_str(), asset->buffer.size);
+            }
 		}
 	}
 }
@@ -160,63 +172,53 @@ void write_asset_enum_end(std::string* s)
     s->append("};\n\n");
 }
 
-void write_asset_array(std::string* s, const Assets* assets, const char* names)
+void write_asset_array(std::string* s, const std::vector<Asset>* assets, const char* names)
 {
     write_asset_array_start(s, names);
     u64 offset = 0;
-    for(const auto& img : assets->images)
+    for(const auto& asset : *assets)
     {
-        write_asset_array_elem(s, &img, &offset);
+        write_asset_array_elem(s, &asset, &offset);
     }
     write_asset_array_end(s);
 }
 
-void write_asset_enum(std::string* s, const Assets* assets, const char* name)
+void write_asset_enum(std::string* s, const std::vector<Asset>* assets, const char* name)
 {
     write_asset_enum_start(s, name);
-    for(const auto& img : assets->images)
+    for(const auto& asset : *assets)
     {
-        write_asset_enum_elem(s, &img);
+        write_asset_enum_elem(s, &asset);
     }
     write_asset_enum_end(s);
 }
 
-void write_asset_fwd_decl(std::string* s, const char* name)
+void write_asset_bin_path(std::string* s, const char* name, const char* path)
 {
-    s->append("extern const unsigned char ");
-    s->append(name);
-    s->append("[]");
-    s->append(";\n\n");
+    s->append("const char* g_");
+
+    std::string lower_name = name;
+    for (char& c : lower_name) 
+    {
+        c = tolower(c);
+    }
+
+    s->append(lower_name);
+    s->append("_path = \"");
+    s->append(path);
+    s->append("\";\n");
 }
 
-void write_asset_type(std::string* s, const Assets* assets, const char* name, const char* offset_name, const char* data_name)
+void write_asset_type(std::string* s, const std::vector<Asset>* assets, const char* name, const char* offset_name, const char* path)
 {
     write_asset_enum(s, assets, name);
     write_asset_array(s, assets, offset_name);
-    write_asset_fwd_decl(s, data_name);
+    write_asset_bin_path(s, name, path);
 }
 
-void write_asset_bin(std::string* s, const Assets* assets, const char* data_name)
-{
-    s->append("\n");
-    s->append("const unsigned char ");
-    s->append(data_name);
-    s->append("[] = { ");
 
-    for(const auto& asset : assets->images)
-    {
-        for(u64 i = 0; i < asset.buffer.size; i++)
-        {
-            char buf[8];
-            sprintf(buf, "0x%02x, ", (unsigned char)asset.buffer.mem[i]);
-            s->append(buf);
-        }
-    }
-    
-    s->append("};\n");
-}
 
-std::string generate_header(const Assets* assets)
+std::string generate_header(const std::vector<Asset>* assets, const char* name, const char* offsets, const char* path)
 {
     std::string buf;
     buf.reserve(1024);
@@ -231,9 +233,26 @@ std::string generate_header(const Assets* assets)
 
     u64 offset = 0;
 
-    write_asset_type(&buf, assets, "Sprite", "g_spriteOffsets", "g_spriteData");
+    write_asset_type(&buf, assets, name, offsets, path);
     
     return buf;
+}
+
+void write_asset_bin(const std::vector<Asset>* assets, const char* target_path)
+{
+    FILE* file = fopen(target_path, "wb");
+    if (!file) 
+    {
+        printf("Failed to open file for writing: %s\n", target_path);
+        return;
+    }
+    
+    for (const auto& asset : *assets)
+    {
+        fwrite(asset.buffer.mem, 1, asset.buffer.size, file);
+    }
+    
+    fclose(file);
 }
 
 std::string generate_source(const Assets* assets, const char* header_name, const char* data_name)
@@ -274,20 +293,156 @@ void write_source_file(const std::string& content, const char* path)
     fclose(file);
 }
 
+void create_directory(const char* path)
+{
+    std::filesystem::path dir_path(path);
+    if (!std::filesystem::exists(dir_path))
+    {
+        std::filesystem::create_directories(dir_path);
+        printf("Created directory: %s\n", path);
+    }
+}
+
+u64 murmur3_64(const void* key, size_t len, u64 seed = 0) 
+{
+    const u64 m = 0xc6a4a7935bd1e995ULL;
+    const int r = 47;
+
+    u64 h = seed ^ (len * m);
+
+    const u64* data = (const u64*)key;
+    const u64* end = data + (len/8);
+
+    while(data != end)
+    {
+        u64 k = *data++;
+
+        k *= m;
+        k ^= k >> r;
+        k *= m;
+
+        h ^= k;
+        h *= m;
+    }
+
+    const unsigned char* data2 = (const unsigned char*)data;
+
+    switch(len & 7)
+    {
+        case 7: h ^= u64(data2[6]) << 48; [[fallthrough]];
+        case 6: h ^= u64(data2[5]) << 40; [[fallthrough]];
+        case 5: h ^= u64(data2[4]) << 32; [[fallthrough]];
+        case 4: h ^= u64(data2[3]) << 24; [[fallthrough]];
+        case 3: h ^= u64(data2[2]) << 16; [[fallthrough]];
+        case 2: h ^= u64(data2[1]) << 8;  [[fallthrough]];
+        case 1: h ^= u64(data2[0]);
+                h *= m;
+    };
+
+    h ^= h >> r;
+    h *= m;
+    h ^= h >> r;
+
+    return h;
+}
+
+u64 check_assets()
+{
+    u64 hash = 0;
+    std::filesystem::path asset_path(asset_root);
+
+    if (!std::filesystem::exists(asset_path))
+    {
+        return hash;
+    }
+
+    for (const auto& entry : std::filesystem::directory_iterator(asset_path))
+    {
+        if (!entry.is_regular_file())
+        {
+            continue;
+        }
+
+        std::string filename = entry.path().filename().string();
+        hash = murmur3_64(filename.c_str(), filename.size(), hash);
+        
+        auto ftime = std::filesystem::last_write_time(entry.path());
+        auto duration = ftime.time_since_epoch();
+        auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+        hash = murmur3_64(&seconds, sizeof(seconds), hash);
+    }
+
+    return hash;
+}
+
+bool should_rebuild()
+{
+    u64 current_hash = check_assets();
+    
+    // Try to read previous hash
+    FILE* state_file = fopen("meta/.state", "rb");
+    if (!state_file)
+    {
+        // No previous state, write current hash and rebuild
+        state_file = fopen("meta/.state", "wb");
+        if (state_file)
+        {
+            fwrite(&current_hash, sizeof(current_hash), 1, state_file);
+            fclose(state_file);
+        }
+        return true;
+    }
+    
+    // Read previous hash and compare
+    u64 previous_hash;
+    size_t read = fread(&previous_hash, sizeof(previous_hash), 1, state_file);
+    fclose(state_file);
+    
+    if (read != 1 || previous_hash != current_hash)
+    {
+        // Hash changed or read failed, write new hash and rebuild
+        state_file = fopen("meta/.state", "wb");
+        if (state_file)
+        {
+            fwrite(&current_hash, sizeof(current_hash), 1, state_file);
+            fclose(state_file);
+        }
+        return true;
+    }
+    
+    return false;
+}
+
 int main()
 {
-	Assets assets;
+    Assets assets;
+
+    if (!should_rebuild())
+    {
+        printf("Assets up to date, skipping rebuild\n");
+        return 0;
+    }
 
     load_assets(&assets);
 
 	printf("Loaded %zu images\n", assets.images.size());
+    create_directory("assets/gen");
+    create_directory("src/gen");
+
+    write_source_file(generate_header(&assets.images, "Sprite", "g_sprite_offsets", "assets/gen/sprites.bin"), "src/gen/sprites.h");
+    write_asset_bin(&assets.images, "assets/gen/sprites.bin");
     
-    write_source_file(generate_header(&assets), "../src/gen/sprites.h");
-    write_source_file(generate_source(&assets, "sprites.h", "g_spriteData"), "../src/gen/sprites.cpp");
+    write_source_file(generate_header(&assets.fonts, "Font", "g_font_offsets", "assets/gen/fonts.bin"), "src/gen/fonts.h");
+    write_asset_bin(&assets.fonts, "assets/gen/fonts.bin");
 
 	for (auto& img : assets.images)
 	{
 		free_buffer(&img.buffer);
+	}
+
+    for (auto& font : assets.fonts)
+	{
+		free_buffer(&font.buffer);
 	}
 
 	return 0;

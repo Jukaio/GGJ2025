@@ -1,2 +1,6 @@
 build/
 src/gen/*
+assets/gen/*
+meta/.state
+meta/binpack.exe
+meta/binpack.obj
