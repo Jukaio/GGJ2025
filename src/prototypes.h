@@ -1,6 +1,7 @@
 #pragma once
 
 #include "assets.h"
+#include <SDL3/SDL_stdinc.h>
 
 void setup(struct App* app, struct PlayerBubble* player_bubbles, size_t count);
 void setup(struct App* app, struct AutoBubble* auto_bubbles, size_t auto_bubble_count);

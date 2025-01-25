@@ -112,7 +112,6 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			{
 				render(app, bubble, Sprite::BubbleBase);
 			}
-
 			else if (player_bubble->is_cat && player_bubble->is_ghost)
 			{
 				render(app, bubble, Sprite::BubbleGhostCat);
@@ -147,7 +146,7 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			}
 			if (player_bubble->has_sun_glasses)
 			{
-				render(app, bubble, Sprite::BubbleSunglasses);
+				render(app, bubble, Sprite::BubbleSunglassesPink, false);
 			}
 			if (player_bubble->has_devil_horns)
 			{
