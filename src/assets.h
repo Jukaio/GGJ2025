@@ -9,7 +9,7 @@
 
 
 inline SDL_Texture** tex;
-inline TTF_TextEngine** font_engine;
+inline TTF_Font* fonts[(u64)Font::Count];
 
 struct TexturesExchangeInData
 {
@@ -59,7 +59,7 @@ inline int load_assets_from_gen(void* data)
 
 	for (u64 i = 0; i < (u64)Sprite::Count; ++i)
 	{
-		AssetRef ref = *(const AssetRef*)&g_sprite_offsets[i];
+		AssetRef ref = g_sprite_offsets[i];
 
 		int x;
 		int y;
@@ -81,6 +81,29 @@ inline int load_assets_from_gen(void* data)
 
 inline void load_assets(SDL_Renderer* renderer)
 {
+	// Load fonts
+	{
+		size_t size;
+		unsigned char* global_buffer = (unsigned char*)SDL_LoadFile(g_font_path, &size);
+		u64 font_count = (u64)Font::Count;
+		for (u64 i = 0; i < (u64)Font::Count; ++i)
+		{
+			AssetRef ref = g_font_offsets[i];
+
+			unsigned char* buf = global_buffer;
+			void* begin = buf + ref.offset;
+			//SDL_IOFromMem
+
+			SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
+			TTF_Font* font = TTF_OpenFontIO(stream, true, 42);
+			if (font == nullptr)
+			{
+				SDL_Log("%s", SDL_GetError());
+			}
+			fonts[i] = font;
+		}
+	}
+
 	// Load textures
 	u64 sprite_count = (u64)Sprite::Count;
 	tex = (SDL_Texture**)SDL_malloc(sizeof(SDL_Texture*) * sprite_count);
@@ -89,27 +112,24 @@ inline void load_assets(SDL_Renderer* renderer)
 		tex[i] = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, 0, 0);
 	}
 	SDL_Thread* thread = SDL_CreateThread(load_assets_from_gen, "Asset Loader", renderer);
+}
 
-
-	// Load fonts
+inline void destroy_assets()
+{
+	// Unload fonts
 	{
 		size_t size;
-		unsigned char* global_buffer = (unsigned char*)SDL_LoadFile(g_sprite_path, &size);
 		u64 font_count = (u64)Font::Count;
 		for (u64 i = 0; i < (u64)Font::Count; ++i)
 		{
-			AssetRef ref = *(const AssetRef*)&g_font_offsets[i];
-
-			const unsigned char* buf = global_buffer;
-			const unsigned char* begin = buf + ref.offset;
-			//SDL_IOFromMem
+			TTF_CloseFont(fonts[i]);
 		}
 	}
 
-	TTF_Font* font = TTF_OpenFont("./assets/Cheeseburger.ttf", 48.0f);
-	TTF_TextEngine* text_engine = TTF_CreateRendererTextEngine(renderer);
-	TTF_Text* text = TTF_CreateText(text_engine, font, "0000000", 0);
-	TTF_SetTextColor(text, 255, 255, 255, 255);
-	TTF_SetTextWrapWidth(text, 64);
-	TTF_SetTextPosition(text, 16, 16);
+	// Unload textures
+	for (u64 i = 0; i < (u64)Sprite::Count; ++i)
+	{
+		SDL_DestroyTexture(tex[i]);
+	}
+	SDL_free(tex);
 }
