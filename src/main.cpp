@@ -887,11 +887,11 @@ int main(int argc, char* argv[])
 	player.current_multiplier = 1;
 
 	SinglePlayerUI player_ui{};
-	player_ui.score = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
+	player_ui.score = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
 	TTF_SetTextColor(player_ui.score, 255, 255, 255, 255);
 
-	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
-	player_ui.multiplier = TTF_CreateText(text_engine, fonts[(u64)Font::Cheeseburger], "0000000", 0);
+	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
+	player_ui.multiplier = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
 
 	// Only one bubble for now
 	constexpr size_t player_bubble_count = 1;
