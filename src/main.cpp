@@ -344,7 +344,7 @@ void emit_particles(const App* app, Particle* particles, int x, int y, SDL_Color
 		particle->bubble.radius = radius;
 		particle->vx = cosf(angle) * speed;
 		particle->vy = sinf(angle) * speed;
-		particle->lifetime = 1.0f;
+		particle->lifetime = (float)(rand() % 1000 + 100) / 1000.0f;
 		particle->bubble.color = color;
 
 		int num = (rand() % 10 + 1);
@@ -694,9 +694,9 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			float w, h;
 			SDL_GetTextureSize(texture, &w, &h);
 			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_FRect dst = SDL_FRect{ bubble->x, bubble->y, bubble->radius * 4.0f, bubble->radius * 4.0f };
-			dst.x -= bubble->radius * 2.0f;
-			dst.y -= bubble->radius * 2.0f;
+			SDL_FRect dst = SDL_FRect{ bubble->x, bubble->y, 256.0f * 4.0f, 256.0f * 4.0f };
+			dst.x -= 256.0f * 2.0f;
+			dst.y -=256.0f * 2.0f;
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
@@ -996,9 +996,9 @@ int main(int argc, char* argv[])
 
 	for (int index = 0; index < (int)Upgrade::Count; index++)
 	{
-		app.upgrades->cost[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "Cost/Cost", 0);
-		app.upgrades->count[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "123", 0);
-		app.upgrades->name[index] = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "Grandma", 0);
+		app.upgrades->cost[index] = TTF_CreateText(text_engine, fonts_small[(u64)Font::JuicyFruity], "Cost/Cost", 0);
+		app.upgrades->count[index] = TTF_CreateText(text_engine, fonts_small[(u64)Font::JuicyFruity], "123", 0);
+		app.upgrades->name[index] = TTF_CreateText(text_engine, fonts_med[(u64)Font::JuicyFruity], "Grandma", 0);
 	}
 
 	player_ui.base = TTF_CreateText(text_engine, fonts[(u64)Font::JuicyFruity], "0000000", 0);
@@ -1081,7 +1081,7 @@ int main(int argc, char* argv[])
 		SDL_GetWindowSize(app.window, &w, &h);
 		canvas.w = w;
 		canvas.h = h;
-		draw_stack_panel(&app, &canvas);
+		draw_stack_panel(&app, &canvas, &player.current_money);
 
 
 		SDL_RenderPresent(app.renderer);
