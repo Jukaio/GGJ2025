@@ -752,6 +752,9 @@ int main(int argc, char* argv[])
 
 	App app{};
 	app.ui = (UiState*)SDL_malloc(sizeof(UiState));
+	SDL_zero(*app.ui);
+	app.upgrades = (Upgrades*)SDL_malloc(sizeof(Upgrades));
+	SDL_zero(*app.upgrades);
 	app.tick_frequency = 0.25f;
 	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
 	if (app.window == nullptr)
@@ -859,10 +862,8 @@ int main(int argc, char* argv[])
 		SDL_GetWindowSize(app.window, &w, &h);
 		canvas.w = w;
 		canvas.h = h;
-		draw_tab_bottom_button(&app, &canvas, 0);
-		draw_tab_bottom_button(&app, &canvas, 1);
-		draw_tab_bottom_button(&app, &canvas, 2);
-		draw_tab_bottom_button(&app, &canvas, 3);
+		draw_tab_bottom_button(&app, &canvas);
+		draw_tabs(&app, &canvas);
 
 
 		SDL_RenderPresent(app.renderer);
