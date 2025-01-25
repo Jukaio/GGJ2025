@@ -446,7 +446,7 @@ int main()
     write_asset_bin(&assets.fonts, "assets/gen/fonts.bin");
 
     write_source_file(generate_header(&assets.wave, "Audio", "g_audio_offsets", "assets/gen/audio.bin"), "src/gen/audio.h");
-    write_asset_bin(&assets.fonts, "assets/gen/audio.bin");
+    write_asset_bin(&assets.wave, "assets/gen/audio.bin");
 
 	for (auto& img : assets.images)
 	{
