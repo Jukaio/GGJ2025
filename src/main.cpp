@@ -1,10 +1,8 @@
 #include <SDL3\SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-
-#include "assets.h"
-
 #include <stdio.h>
 
+#include "assets.h"
 #include "core.h"
 typedef uint64_t milliseconds;
 
@@ -283,10 +281,7 @@ struct AutoBubble
 	float height;
 };
 
-float lerp(float a, float b, float t)
-{
-	return a + (b - a) * t;
-}
+float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
 
 inline void update(KeyboardDevice* keyboard_state)
@@ -363,7 +358,7 @@ void print(const PlayerBubble* bubble)
 {
 	SDL_Log("== PlayerBubble ==");
 	print(&bubble->bubble, "PlayerBubble.");
-	SDL_Log("-%sArchetype", "PlayerBubble.", bubble->archetype);
+	SDL_Log("-%sArchetype: %llu", "PlayerBubble.", bubble->archetype);
 }
 
 void print(const AutoBubbleIncremental* inc, const char* prefix = "")
@@ -469,18 +464,21 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 		float global_x = bubble->bubble.x + bubble->x;
 		float global_y = bubble->bubble.y + bubble->y;
 		float distance = math_distance(state->x, state->y, global_x, global_y);
+		if (player->current_money < bubble->inc.cost)
+		{
+			bubble->bubble.color = SDL_Color{ 128, 128, 128, 255 };
+			continue;
+		}
+
 		if (distance < bubble->bubble.radius)
 		{
 			bubble->bubble.color = SDL_Color{ 255, 0, 0, 255 };
 
 			if (is_player_clicking)
 			{
-				if (player->current_money >= bubble->inc.cost)
-				{
-					player->current_money = player->current_money - bubble->inc.cost;
-					bubble->inc.amount = bubble->inc.amount + 1;
-					bubble->bubble.time_since_clicked = app->now;
-				}
+				player->current_money = player->current_money - bubble->inc.cost;
+				bubble->inc.amount = bubble->inc.amount + 1;
+				bubble->bubble.time_since_clicked = app->now;
 				bubble->bubble.color = SDL_Color{ 255, 255, 255, 255 };
 			}
 		}
@@ -598,7 +596,8 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	app.renderer = SDL_CreateRenderer(app.window, nullptr);
-	if (app.renderer == nullptr) {
+	if (app.renderer == nullptr)
+	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
 		return -1;
 	}
@@ -623,7 +622,6 @@ int main(int argc, char* argv[])
 	player_bubbles->bubble.duration_click = bubble_click_duration;
 
 	print(player_bubbles);
-	SDL_Log("");
 
 	constexpr size_t auto_bubble_count = 9;
 	AutoBubble auto_bubbles[auto_bubble_count]{};
@@ -653,7 +651,7 @@ int main(int argc, char* argv[])
 		bubble->color = SDL_Color{ 255, 0, 255, 255 };
 
 		AutoBubbleIncremental config = {};
-		config.cooldown = 2;
+		config.cooldown = 1;
 		config.cost = (32 + (index * 2) * 32);
 		config.gain = 1 + (index * 2);
 		auto_bubble->inc = config;
