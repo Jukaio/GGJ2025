@@ -106,7 +106,6 @@ struct SinglePlayer
 
 struct SinglePlayerUI
 {
-	// Might not be temp
 	char buffer[64];
 
 	TTF_Text* score;
@@ -130,6 +129,14 @@ struct Bubble
 	SDL_Color color;
 };
 
+enum PlayerBubbleBase : uint8_t
+{
+	PlayerBubbleBaseBasic = 0,
+	PlayerBubbleBaseCat,
+	PlayerBubbleBaseGhost,
+	PlayerBubbleBaseGhostCat,
+};
+
 struct PlayerBubble
 {
 	Bubble bubble;
@@ -139,18 +146,18 @@ struct PlayerBubble
 		uint64_t archetype;
 		struct
 		{
-			uint8_t is_basic : 1;
 			uint8_t is_cat : 1;
+			uint8_t is_ghost : 1;
+			uint8_t has_dead_eyes : 1;
+			uint8_t has_ghost_eyes : 1;
 			uint8_t has_sun_glasses : 1;
+			uint8_t has_halo : 1;
 			uint8_t has_glasses : 1;
-			uint8_t e04 : 1;
-			uint8_t e05 : 1;
-			uint8_t e06 : 1;
-			uint8_t e07 : 1;
-			uint8_t e08 : 1;
-			uint8_t e09 : 1;
-			uint8_t e10 : 1;
-			uint8_t e11 : 1;
+			uint8_t has_bow : 1;
+			uint8_t has_tie : 1;
+			uint8_t has_devil_horns : 1;
+			uint8_t has_has_glare : 1;
+			uint8_t has_has_weird_mouth : 1;
 			uint8_t e12 : 1;
 			uint8_t e13 : 1;
 			uint8_t e14 : 1;
@@ -455,7 +462,7 @@ void update(const App* app, Particle* particles, int count)
 	}
 }
 
-void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
+void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t count)
 {
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 	{
@@ -465,15 +472,20 @@ void update(App* app, SinglePlayer* player, PlayerBubble* bubbles, size_t count)
 		{
 			if (key_just_down(&app->input.keyboard, (SDL_Scancode)current))
 			{
-				uint64_t multiplier = current - scancode_begin + 1;
-				player->current_multiplier = multiplier;
+				uint64_t bit_index = current - scancode_begin;
+				uint64_t mask = 1ull << bit_index;
+				for (size_t index = 0; index < count; index++)
+				{
+					PlayerBubble* bubble = &player_bubbles[index];
+					bubble->archetype = mask ^ bubble->archetype;
+				}
 			}
 		}
 	}
 
 	for (size_t index = 0; index < count; index++)
 	{
-		PlayerBubble* bubble = &bubbles[index];
+		PlayerBubble* bubble = &player_bubbles[index];
 
 		MouseState const* state = &app->input.mouse.current;
 		float distance = math_distance(state->x, state->y, bubble->bubble.x, bubble->bubble.y);
@@ -623,11 +635,27 @@ void post_render_update(SinglePlayer* player)
 	player->previous_multiplier = player->current_multiplier;
 }
 
+void render(App* app, Bubble const* bubble, Sprite sprite)
+{
+	SDL_Color c = bubble->color;
+
+	SDL_Texture* texture = tex[(uint64_t)sprite];
+	SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+
+	float w, h;
+	SDL_GetTextureSize(texture, &w, &h);
+	SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+
+	SDL_FRect dst = get_frect(app, bubble);
+	SDL_RenderTexture(app->renderer, texture, &src, &dst);
+}
+
 void render(App* app, PlayerBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
-		const Bubble* bubble = &bubbles[index].bubble;
+		const PlayerBubble* player_bubble = &bubbles[index];
+		const Bubble* bubble = &player_bubble->bubble;
 		{
 			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
 			float w, h;
@@ -639,17 +667,66 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
-		SDL_Color c = bubble->color;
+		uint64_t base_mask = 0b11 & player_bubble->archetype;
+		if (base_mask == 0)
+		{
+			render(app, bubble, Sprite::BubbleBase);
+		}
 
-		SDL_Texture* texture = tex[(uint64_t)Sprite::BubbleBase];
-		float w, h;
-		SDL_GetTextureSize(texture, &w, &h);
-		SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+		else if (player_bubble->is_cat && player_bubble->is_ghost)
+		{
+			render(app, bubble, Sprite::BubbleGhostCat);
+		}
+		else if (player_bubble->is_cat)
+		{
+			render(app, bubble, Sprite::BubbleKot);
+		}
+		else if (player_bubble->is_ghost)
+		{
+			render(app, bubble, Sprite::BubbleGhost);
+		}
 
-		SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
+		if (player_bubble->has_halo)
+		{
+			render(app, bubble, Sprite::BubbleAngel);
+		}
+		if (player_bubble->has_dead_eyes)
+		{
+			render(app, bubble, Sprite::BubbleDead);
+		}
+		if (player_bubble->has_ghost_eyes)
+		{
+			render(app, bubble, Sprite::BubbleGhostEyes);
+		}
+		if (player_bubble->has_has_weird_mouth)
+		{
+			render(app, bubble, Sprite::BubbleWeirdMouth);
+		}
 
-		SDL_FRect dst = get_frect(app, bubble);
-		SDL_RenderTexture(app->renderer, texture, &src, &dst);
+		if (player_bubble->has_glasses)
+		{
+			render(app, bubble, Sprite::BubbleGlasses);
+		}
+		if (player_bubble->has_sun_glasses)
+		{
+			render(app, bubble, Sprite::BubbleSunglasses);
+		}
+		if (player_bubble->has_devil_horns)
+		{
+			render(app, bubble, Sprite::BubbleDevil);
+		}
+		if (player_bubble->has_bow)
+		{
+			render(app, bubble, Sprite::BubbleBow);
+		}
+		if (player_bubble->has_tie)
+		{
+			render(app, bubble, Sprite::BubblesTie);
+		}
+		if (player_bubble->has_has_glare)
+		{
+			render(app, bubble, Sprite::BubbleGlare);
+		}
 	}
 }
 
@@ -860,7 +937,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	App app{};
 	app.tick_frequency = 0.25f;
 	app.window = SDL_CreateWindow("Bubble Clicker", window_width, window_height, 0);
@@ -895,7 +971,7 @@ int main(int argc, char* argv[])
 
 	// Only one bubble for now
 	constexpr size_t player_bubble_count = 1;
-	PlayerBubble player_bubbles[player_bubble_count];
+	PlayerBubble player_bubbles[player_bubble_count]{};
 
 	constexpr size_t auto_bubble_count = 9;
 	AutoBubble auto_bubbles[auto_bubble_count]{};

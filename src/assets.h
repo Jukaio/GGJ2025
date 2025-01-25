@@ -32,6 +32,12 @@ inline void load_assets_exchange(void* data)
 		{
 			SDL_Log("%s", SDL_GetError());
 		}
+
+		if (!SDL_SetTextureScaleMode(tex[i], SDL_SCALEMODE_LINEAR))
+		{
+			SDL_Log("%s", SDL_GetError());
+		}
+
 		SDL_DestroySurface(srf);
 	}
 }
