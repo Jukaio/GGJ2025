@@ -5,28 +5,9 @@
 
 #pragma comment(lib, "Shcore.lib")
 
-void platform_init()
-{
-	SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
-}
-
-void platform_destroy()
-{
-
-}
-
 void message_box(const char* title, const char* body)
 {
 	MessageBoxA(NULL, body, title, MB_ICONERROR | MB_OK);
 }
-#else
 
-void platform_init()
-{
-	
-}
-void platform_destroy()
-{
-
-}
 #endif

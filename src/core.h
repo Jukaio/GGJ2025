@@ -15,11 +15,9 @@ struct AssetRef
 	uint64_t size;
 };
 
-void platform_init();
-void platform_destroy();
-void message_box(const char* title, const char* body);
 
 #if _WIN32
+void message_box(const char* title, const char* body);
 #define ASSERT(condition, msg)                                                  \
     do {                                                                        \
         if (!(condition)) {                                                     \

@@ -2,6 +2,7 @@
 
 #include "prototypes.h"
 #include "types.h"
+
 void animation_add(BubbleAnimation* animation, Sprite sprite)
 {
 	animation->sprites[animation->count] = sprite;
