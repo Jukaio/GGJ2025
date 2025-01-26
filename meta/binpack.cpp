@@ -199,6 +199,20 @@ void write_asset_enum(std::string* s, const std::vector<Asset>* assets, const ch
 	write_asset_enum_end(s);
 }
 
+void write_decl_asset_embed(std::string* s, const char* name)
+{
+	s->append("extern const unsigned char g_");
+
+	std::string lower_name = name;
+	for (char& c : lower_name)
+	{
+		c = tolower(c);
+	}
+
+    s->append(lower_name);
+    s->append("_bin[];\n");
+}
+
 void write_asset_bin_path(std::string* s, const char* name, const char* path)
 {
 	s->append("constexpr char* g_");
@@ -219,7 +233,11 @@ void write_asset_type(std::string* s, const std::vector<Asset>* assets, const ch
 {
 	write_asset_enum(s, assets, name);
 	write_asset_array(s, assets, offset_name);
-	write_asset_bin_path(s, name, path);
+#ifdef EMBED
+    write_decl_asset_embed(s, name);
+#else
+    write_asset_bin_path(s, name, path);
+#endif
 }
 
 
@@ -233,6 +251,7 @@ std::string generate_header(const std::vector<Asset>* assets, const char* name, 
 	buf.append("\n");
 	buf.append("// GENERATED FILE\n\n");
 	buf.append("#include \"core.h\"\n");
+
 	// buf.append("using u64 = unsigned long long;\n\n");
 	// buf.append("struct AssetRef \n{\n");
 	// buf.append("\tu64 offset;\n");
@@ -265,7 +284,7 @@ void write_asset_bin(const std::vector<Asset>* assets, const char* target_path)
 	fclose(file);
 }
 
-std::string generate_source(const Assets* assets, const char* header_name, const char* data_name)
+std::string generate_source(const std::vector<Asset>* assets, const char* header_name, const char* data_name)
 {
 	std::string source;
 
@@ -276,7 +295,7 @@ std::string generate_source(const Assets* assets, const char* header_name, const
 	source.append(data_name);
 	source.append("[] = { ");
 
-	for (const auto& asset : assets->images)
+	for (const auto& asset : *assets)
 	{
 		for (u64 i = 0; i < asset.buffer.size; i++)
 		{
@@ -427,6 +446,8 @@ int main()
 {
 	Assets assets;
 
+    const bool embed = true;
+
 	if (!should_rebuild())
 	{
 		printf("Assets up to date, skipping rebuild\n");
@@ -448,6 +469,12 @@ int main()
 	write_source_file(generate_header(&assets.wave, "Audio", "g_audio_offsets", "assets/gen/audio.bin"), "src/gen/audio.h");
 	write_asset_bin(&assets.wave, "assets/gen/audio.bin");
 
+#ifdef EMBED
+    write_source_file(generate_source(&assets.images, "sprites.h", "g_sprite_bin"), "src/gen/sprites.cpp");
+    write_source_file(generate_source(&assets.wave, "audio.h", "g_audio_bin"), "src/gen/audio.cpp");
+    write_source_file(generate_source(&assets.fonts, "fonts.h", "g_font_bin"), "src/gen/fonts.cpp");
+#endif
+
 	for (auto& img : assets.images)
 	{
 		free_buffer(&img.buffer);
@@ -462,6 +489,7 @@ int main()
 	{
 		free_buffer(&wave.buffer);
 	}
+    
 
 	return 0;
 }
