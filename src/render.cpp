@@ -191,6 +191,14 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			{
 				render(app, bubble, Sprite::BubblesTie);
 			}
+			if (player_bubble->has_has_glare)
+			{
+				render(app, bubble, Sprite::BubbleGlare);
+			}
+			if (player_bubble->has_crown)
+			{
+				render( app, bubble, Sprite::BubbleCrown );
+			}
 		}
 	}
 }

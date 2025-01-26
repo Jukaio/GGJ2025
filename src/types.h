@@ -131,6 +131,7 @@ struct PlayerBubble
 			uint8_t has_bow : 1;
 			uint8_t has_tie : 1;
 			uint8_t is_cat : 1;
+			uint8_t has_crown : 1;
 		};
 	};
 };

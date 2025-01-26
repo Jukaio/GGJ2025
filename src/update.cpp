@@ -200,9 +200,22 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 		{
 			player_bubble->bubble.color = bubble_white_bright;
 
-			t = SDL_sin(app->now * 0.5f) * 0.5f + 0.5f;
-			player_bubble->bubble.y =
-				lerp(player_bubble->bubble.yMin, player_bubble->bubble.yMax, Bouncee::spike_bounce(t));
+			t = app->now * 0.5f;
+			float radiusX = (player_bubble->bubble.xMax - player_bubble->bubble.xMin) / 2.0f;
+			float radiusY = (player_bubble->bubble.yMax - player_bubble->bubble.yMin) / 2.0f;
+			float centerX = (player_bubble->bubble.xMax + player_bubble->bubble.xMin) / 2.0f;
+			float centerY = (player_bubble->bubble.yMax + player_bubble->bubble.yMin) / 2.0f;
+
+			float zigzagFrequency = 3.0f;
+			float zigzagAmplitude = 0.2f;
+
+			float zigzagModulation = 1.0f + zigzagAmplitude * SDL_sin(app->now * zigzagFrequency);
+
+			radiusX = radiusX * zigzagModulation;
+			radiusY = radiusY * zigzagModulation;
+
+			player_bubble->bubble.x = centerX + SDL_cos(t) * radiusX;
+			player_bubble->bubble.y = centerY + SDL_sin(t) * radiusY;
 		}
 	}
 }
