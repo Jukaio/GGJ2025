@@ -550,8 +550,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
-
 	load_assets(app.renderer);
 
 	text_engine = TTF_CreateRendererTextEngine(app.renderer);

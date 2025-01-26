@@ -18,31 +18,95 @@ struct Button
 	SDL_FRect rect;
 };
 
-const Sprite UpgradeIcons[] = { Sprite::UpgradeDeadFish,   Sprite::UpgradeSoapUsed, Sprite::UpgradeDuck,
-							   Sprite::UpgradSoap,        Sprite::UpgradeDuckNeon, Sprite::UpgradeBathEmpty,
-							   Sprite::UpgradeDuckBetter, Sprite::UpgradeBath };
+const Sprite UpgradeIcons[] = {
+	Sprite::UpgradeDeadFish,
+	Sprite::UpgradeSoapUsed,
+	Sprite::UpgradeDuck,
+	Sprite::UpgradSoap,
+	Sprite::UpgradeDuckNeon,
+	Sprite::UpgradeBathEmpty,
+	Sprite::UpgradeDuckBetter,
+	Sprite::UpgradeBath
+};
 
-const char* UpgradeNames[] = { "Dead Fish", "Used Soap",  "Duck",        "Soap",
-							  "Neon Duck", "Empty Bath", "Better Duck", "Full Bath" };
+const char* UpgradeNames[] = {
+	"Dead Fish",
+	"Used Soap",
+	"Duck",
+	"Soap",
+	"Neon Duck",
+	"Empty Bath",
+	"Better Duck",
+	"Full Bath"
+};
 
-const double UpgradeCostsIncrement[] = { 2,      50.0,     200.0,     25000.0,
+const double UpgradeCostsIncrement[] = {
+	2,
+	50.0,
+	200.0,
+	25000.0,
+	50000.0,
+	50000000.0,
+	250000000.0,
+	500000000.0
+};
 
-										50000.0, 50000000.0, 250000000.0, 500000000.0 };
+double UpgradeCosts[] = {
+	50.0,
+	100.0,
+	2000.0,
+	1000000.0,
+	2500000.0,
+	250000000.0,
+	500000000.0,
+	1000000000.0
+};
 
-double UpgradeCosts[] = { 50.0, 100.0, 2000.0, 1000000.0, 2500000.0, 250000000.0, 500000000.0, 1000000000.0 };
+double UpgradeCostsIncrementScalar[] = {
+	1.0,
+	4.0,
+	2.0,
+	4.0,
+	2.0,
+	4.0,
+	2.0,
+	4.0
+};
 
-double UpgradeCostsIncrementScalar[] = { 1.0, 4.0, 2.0, 4.0, 2.0, 4.0, 2.0, 4.0 };
-
-const double SkinCosts[] = { 100.0,   200.0,   500.0,   10000.0,  250000.0,   500000.0,   750000.0,
-							10000000.0, 20000000.0, 50000000.0, 700000000.0, 1000000000.0, 2000000000.0, 30000000000.0 };
+const double SkinCosts[] = {
+	100.0,
+	200.0,
+	500.0,
+	10000.0,
+	250000.0,
+	500000.0,
+	750000.0,
+	10000000.0,
+	20000000.0,
+	50000000.0,
+	700000000.0,
+	1000000000.0,
+	2000000000.0,
+	30000000000.0
+};
 
 // Keep in sort!
 
-const Sprite SkinIcons[] = { Sprite::BubbleGlare,     Sprite::BubbleAngel,   Sprite::BubbleDevil,
-							Sprite::BubbleGhostEyes, Sprite::BubbleGlasses, Sprite::BubbleWeirdMouth,
-							Sprite::BubbleGhost,     Sprite::BubbleDead,    Sprite::BubbleSunglassesPink,
-							Sprite::BubbleBow,       Sprite::BubblesTie,    Sprite::BubbleKot,
-							Sprite::BubbleCrown };
+const Sprite SkinIcons[] = {
+	Sprite::BubbleGlare,
+	Sprite::BubbleAngel,
+	Sprite::BubbleDevil,
+	Sprite::BubbleGhostEyes,
+	Sprite::BubbleGlasses,
+	Sprite::BubbleWeirdMouth,
+	Sprite::BubbleGhost,
+	Sprite::BubbleDead,
+	Sprite::BubbleSunglassesPink,
+	Sprite::BubbleBow,
+	Sprite::BubblesTie,
+	Sprite::BubbleKot,
+	Sprite::BubbleCrown
+};
 
 
 struct Upgrades
