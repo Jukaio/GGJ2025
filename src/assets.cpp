@@ -198,7 +198,7 @@ void destroy_assets()
 	// Unload fonts
 	{
 		u64 font_count = (u64)Font::Count;
-		for (u64 i = 0; i < (u64)Font::Count; ++i)
+		for (u64 i = 0; i < font_count; ++i)
 		{
 			TTF_CloseFont(fonts[i]);
 			TTF_CloseFont(fonts_med[i]);

@@ -10,6 +10,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#include "main.h"
 #endif
 
 constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
@@ -64,6 +65,51 @@ static bool bubble_bubble_intersection(const Bubble* lhs, const Bubble* rhs)
 	}
 
 	return length <= alpha + beta;
+}
+
+static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max)
+{
+	AutoBubble* next = nullptr;
+	for (size_t j = 0; j < auto_bubble_capacity; j++)
+	{
+		AutoBubble* auto_bubble = &auto_bubbles[j];
+		if (auto_bubble->is_dead)
+		{
+			auto_bubble->pop_countdown = (rand() % 15) + 20;
+			auto_bubble->spawned_at = app.now;
+			next = auto_bubble;
+			next->is_dead = false;
+			auto_bubble->bubble.consecutive_clicks = 0;
+			auto_bubble->bubble.burst_cap = (rand() % (burst_max - burst_min)) + burst_min;
+			auto_bubble->pop_animation.state = BubbleAnimationStateStop;
+
+			int window_width, window_height;
+			SDL_GetWindowSize(app.window, &window_width, &window_height);
+			float window_width_half = window_width / 2.0f;
+			float window_height_half = window_height / 2.0f;
+
+			next->bubble.x = (rand() % int(window_width * 0.8f)) + int(window_width * 0.1f);
+			next->bubble.y = (rand() % int(window_height * 0.8f)) + int(window_height * 0.1f);
+			for (size_t iterations = 0; iterations < 8; iterations++)
+			{
+				if (!bubble_bubble_intersection(&player_bubbles->bubble, &next->bubble))
+				{
+					break;
+				}
+				next->bubble.x = (rand() % int(window_width * 0.8f)) + int(window_width * 0.1f);
+				next->bubble.y = (rand() % int(window_height * 0.8f)) + int(window_height * 0.1f);
+			}
+			break;
+		}
+	}
+	if (next == nullptr)
+	{
+		next = &auto_bubbles[rand() % auto_bubble_capacity];
+		next->pop_countdown = 0;
+		animation_start(&next->pop_animation);
+		return nullptr;
+	}
+	return next;
 }
 
 void main_run()
@@ -121,7 +167,6 @@ void main_run()
 
 	// render(&app, upgrade_bubbles, upgrade_bubble_count);
 	render(&app, player_bubbles, player_bubble_count);
-	render(&app, auto_bubbles, auto_bubble_capacity);
 	render(&app, particles, particle_count);
 
 	SDL_FRect canvas;
@@ -131,6 +176,8 @@ void main_run()
 	canvas.h = h;
 	draw_stack_panel_left(&app, &canvas, &player_ui, &player_bubbles[0], &player.current_money);
 	draw_stack_panel(&app, &canvas, &player, &player.current_money);
+
+	render(&app, auto_bubbles, auto_bubble_capacity);
 
 	SDL_RenderPresent(app.renderer);
 
@@ -143,7 +190,7 @@ void main_run()
 			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
 			if (difference > 0)
 			{
-				player.current_base = player.current_base + difference * 2;
+				player.current_base = player.current_base + ((difference * player_bubbles->archetype) * 2) + 1;
 			}
 		}
 		{
@@ -153,53 +200,27 @@ void main_run()
 			{
 				for (int i = 0; i < difference; i++)
 				{
-
-					AutoBubble* next = nullptr;
-					for (size_t j = 0; j < auto_bubble_capacity; j++)
-					{
-						AutoBubble* auto_bubble = &auto_bubbles[j];
-						if (auto_bubble->is_dead)
-						{
-							auto_bubble->pop_countdown = (rand() % 15) + 20;
-							auto_bubble->spawned_at = app.now;
-							next = auto_bubble;
-							next->is_dead = false;
-							auto_bubble->bubble.consecutive_clicks = 0;
-							auto_bubble->bubble.burst_cap = (rand() % 10) + 2;
-							auto_bubble->pop_animation.state = BubbleAnimationStateStop;
-							int window_width, window_height;
-							SDL_GetWindowSize(app.window, &window_width, &window_height);
-							float window_width_half = window_width / 2.0f;
-							float window_height_half = window_height / 2.0f;
-							SDL_FRect dst =
-								SDL_FRect{ window_width_half, window_height_half, player_bubbles->max_radius * 4.0f,
-										  player_bubbles->max_radius * 4.0f };
-
-							next->bubble.x = (rand() % (int)dst.w) + (int)dst.x - (dst.w / 2);
-							next->bubble.y = (rand() % (int)dst.h) + (int)dst.y - (dst.h / 2);
-							for (size_t iterations = 0; iterations < 8; iterations++)
-							{
-								if (!bubble_bubble_intersection(&player_bubbles->bubble, &next->bubble))
-								{
-									break;
-								}
-								next->bubble.x = (rand() % (int)canvas.w) + (int)canvas.x;
-								next->bubble.y = (rand() % (int)canvas.h) + (int)canvas.y;
-							}
-							break;
-						}
-					}
-					if (next == nullptr)
-					{
-						next = &auto_bubbles[rand() % auto_bubble_capacity];
-						next->pop_countdown = 0;
-						animation_start(&next->pop_animation);
+					AutoBubble* bubble = spawn_random_auto_bubble(2, 4);
+					if (bubble != nullptr) {
+						bubble->archetype = 0;
 					}
 				}
 			}
 		}
 		{
 			uint32_t index = (uint32_t)Upgrade::BubbleTripler1;
+			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
+			if (difference > 0)
+			{
+				for (int i = 0; i < difference; i++)
+				{
+					int archetype_bias = rand() % 256;
+					AutoBubble* bubble = spawn_random_auto_bubble(archetype_bias / 6, archetype_bias / 4);
+					if (bubble != nullptr) {
+						bubble->archetype = uint8_t(archetype_bias);
+					}
+				}
+			}
 		}
 		{
 			uint32_t index = (uint32_t)Upgrade::BubbleTriple2;
@@ -215,6 +236,13 @@ void main_run()
 		}
 		{
 			uint32_t index = (uint32_t)Upgrade::AutoBubble4;
+		}
+
+		for (int i = 0; i < (int)Upgrade::Count; ++i)
+		{
+			double cost = UpgradeCosts[i];
+			int difference = player.current_upgrade_levels[i] - player.previous_upgrades_levels[i];
+			player.current_multiplier = player.current_multiplier + difference;
 		}
 
 		SDL_memcpy(player.previous_upgrades_levels, player.current_upgrade_levels,

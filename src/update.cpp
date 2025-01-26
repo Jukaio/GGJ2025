@@ -222,8 +222,6 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 	{
 		AutoBubble* bubble = &bubbles[index];
 
-		//bubble->bubble.x = offset_x;
-		//bubble->bubble.y = offset_y + (offset_y * index);
 		if (bubble->is_dead) {
 			continue;
 		}
@@ -247,11 +245,6 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 		float global_x = bubble->bubble.x;
 		float global_y = bubble->bubble.y;
 		float distance = math_distance(state->x, state->y, global_x, global_y);
-		if (player->current_money < bubble->inc.cost)
-		{
-			bubble->bubble.color = bubble_pink_bright;
-			continue;
-		}
 
 		if (distance < get_legal_radius(&bubble->bubble))
 		{
