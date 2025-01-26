@@ -54,7 +54,7 @@ const double UpgradeCostsIncrement[] = {
 double UpgradeCosts[] = {
 	50.0,
 	100.0,
-	2000.0,
+	1000.0,
 	1000000.0,
 	2500000.0,
 	250000000.0,
@@ -65,7 +65,7 @@ double UpgradeCosts[] = {
 double UpgradeCostsIncrementScalar[] = {
 	1.0,
 	4.0,
-	2.0,
+	1.5,
 	4.0,
 	2.0,
 	4.0,
