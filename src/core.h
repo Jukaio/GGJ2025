@@ -203,3 +203,8 @@ inline void update(InputDevice* input)
 	update(&input->keyboard);
 	update(&input->mouse);
 }
+
+inline bool GetWindowSizeI(SDL_Window* wnd, int* w, int* h)
+{
+	return SDL_GetWindowSizeInPixels(wnd, w, h);
+}

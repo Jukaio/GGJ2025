@@ -250,7 +250,7 @@ void update(App* app, SinglePlayer* player, SimpleDuck* duck, PlayerBubble* play
 		}
 
 		int window_width, window_height;
-		SDL_GetWindowSize(app->window, &window_width, &window_height);
+		GetWindowSizeI(app->window, &window_width, &window_height);
 		int window_width_half = window_width / 2;
 		int window_height_half = window_height / 2;
 
@@ -287,7 +287,7 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 
 	int window_width, window_height;
-	SDL_GetWindowSize(app->window, &window_width, &window_height);
+	GetWindowSizeI(app->window, &window_width, &window_height);
 
 	float offset_x = 0.65f * window_width;
 	float offset_y = 0.15f * window_height;
