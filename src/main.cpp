@@ -90,13 +90,10 @@ void cleanup()
 }
 
 #ifdef __EMSCRIPTEN__
-static bool g_display_size_changed = false;
-static EM_BOOL on_web_display_size_changed( int event_type, const EmscriptenUiEvent *event, void *user_data )
-{
-	display_size_changed = true;
-	return 0;
-}
+EM_JS(int, get_canvas_width, (), { return Module.canvas.width; });
+EM_JS(int, get_canvas_height, (), { return Module.canvas.height; });
 #endif
+
 
 static bool bubble_bubble_intersection(const Bubble* lhs, const Bubble* rhs)
 {
@@ -196,16 +193,8 @@ void main_run()
 	}
 
 #ifdef __EMSCRIPTEN__
-	if (g_display_size_changed)
-	{
-		double w, h;
-		emscripten_get_element_css_size( "#canvas", &w, &h );
-		SDL_SetWindowSize( sdl_window, (int)w, (int) h );
-
-		g_display_size_changed = false;
-	}
+	SDL_SetWindowSize(app.window, get_canvas_width(), get_canvas_height());
 #endif
-
 	// Input
 	update(&app.input);
 
@@ -595,11 +584,6 @@ int main(int argc, char* argv[])
 	tp = SDL_GetTicks();
 
 #ifdef __EMSCRIPTEN__
-	emscripten_set_resize_callback(
-		EMSCRIPTEN_EVENT_TARGET_WINDOW,
-		0, 0, on_web_display_size_changed
-	);
-
 	emscripten_set_main_loop(main_run, 0, 1);
 #else
 	while (is_running)
