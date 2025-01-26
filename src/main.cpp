@@ -394,6 +394,8 @@ int main(int argc, char* argv[])
 	setup(&app, auto_bubbles, auto_bubble_capacity);
 	setup(&app, upgrade_bubbles, upgrade_bubble_count);
 
+	playLoop( Audio::Soundtrack1 );
+
 	post_render_update(&app, &player, nullptr, 0, nullptr, 0, &player_ui, true);
 
 	is_running = true;
