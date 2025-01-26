@@ -10,8 +10,8 @@
 constexpr float UiTabWidthScale = 0.06;
 constexpr float UiTabHeightScale = 0.08;
 
-const SDL_Color btn_over_tint = { 198, 231, 228, 255 };
-const SDL_Color btn_press_tint = { 129, 191, 183, 255 };
+const SDL_Color btn_over_tint = bubble_pink_bright;
+const SDL_Color btn_press_tint = bubble_pink;
 
 struct Button
 {
