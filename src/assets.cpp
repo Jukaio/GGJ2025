@@ -1,10 +1,10 @@
 
 #include "assets.h"
 
-#include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_mixer/SDL_mixer.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <SDL3/SDL.h>
 
 SDL_Texture** tex;
 TTF_Font* fonts_small[(uint64_t)Font::Count];
@@ -111,10 +111,9 @@ void load_assets(SDL_Renderer* renderer)
 			void* begin = buf + ref.offset;
 
 			SDL_PropertiesID proerties = SDL_CreateProperties();
-
+			
 			SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
-			SDL_SetPointerProperty(proerties, TTF_PROP_FONT_CREATE_IOSTREAM_POINTER, stream);
-			TTF_Font* font = TTF_OpenFontWithProperties(proerties);
+			TTF_Font* font = TTF_OpenFontIO(stream, false, 42);
 			TTF_Font* font_m = TTF_OpenFontIO(stream, false, 28);
 			TTF_Font* font_s = TTF_OpenFontIO(stream, true, 18);
 
