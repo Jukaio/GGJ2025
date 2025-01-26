@@ -16,7 +16,7 @@
 constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
 
 constexpr size_t player_bubble_count = 1;
-constexpr size_t auto_bubble_capacity = 6;
+constexpr size_t auto_bubble_capacity = 128;
 constexpr size_t upgrade_bubble_count = 4;
 constexpr size_t particle_capacity = 1024;
 
@@ -67,7 +67,7 @@ static bool bubble_bubble_intersection(const Bubble* lhs, const Bubble* rhs)
 	return length <= alpha + beta;
 }
 
-static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max)
+static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max, int pop_reward_money, int pop_reward_multiplier)
 {
 	AutoBubble* next = nullptr;
 	for (size_t j = 0; j < auto_bubble_capacity; j++)
@@ -88,6 +88,13 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max)
 			float window_width_half = window_width / 2.0f;
 			float window_height_half = window_height / 2.0f;
 
+			auto_bubble->max_radius = 256.0f * 0.3f;
+			auto_bubble->min_radius = 228.0f * 0.3f;
+
+			float difference = auto_bubble->max_radius - auto_bubble->min_radius;
+
+			auto_bubble->min_radius = (rand() % 32) + auto_bubble->min_radius;
+			auto_bubble->max_radius = auto_bubble->min_radius + difference;
 			next->bubble.x = (rand() % int(window_width * 0.8f)) + int(window_width * 0.1f);
 			next->bubble.y = (rand() % int(window_height * 0.8f)) + int(window_height * 0.1f);
 			for (size_t iterations = 0; iterations < 8; iterations++)
@@ -106,6 +113,21 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max)
 	{
 		next = &auto_bubbles[rand() % auto_bubble_capacity];
 		next->pop_countdown = 0;
+
+		uint64_t base_line = 0;
+		for (int i = 0; i < player_bubble_count; i++)
+		{
+			uint32_t archetype_owned = 0;
+			for (int j = 0; j < 16; j++) {
+				if (player_bubbles[i].owned_cosmetics[j]) {
+					archetype_owned |= 1 << j;
+				}
+			}
+			base_line = archetype_owned / 2;
+		}
+
+		player.current_money = pop_reward_money + (1 * (player.current_base * player.current_multiplier));
+		player.addon_multiplier = player.addon_multiplier + pop_reward_multiplier;
 		animation_start(&next->pop_animation);
 		return nullptr;
 	}
@@ -137,6 +159,30 @@ void main_run()
 
 	// Input
 	update(&app.input);
+
+	// Pre-caln
+	uint64_t base_pop = player.current_base;
+	for (int i = 0; i < player_bubble_count; i++)
+	{
+		uint32_t archetype_owned = 0;
+		for (int j = 0; j < 16; j++) {
+			if (player_bubbles[i].owned_cosmetics[j]) {
+				archetype_owned |= 1 << j;
+			}
+		}
+		player.current_base = player.current_base + archetype_owned / 2;
+	}
+	player.current_base = player.current_base + player.addon_base;
+
+	uint64_t multiplier_pop = player.current_multiplier;;
+	for (int i = 0; i < auto_bubble_capacity; i++)
+	{
+		if (!auto_bubbles[i].is_dead) {
+			player.current_multiplier = player.current_multiplier + auto_bubbles[i].archetype + 1;
+		}
+	}
+	player.current_multiplier = player.current_multiplier + player.addon_multiplier;
+
 
 	// Fixed Update
 	app.now = now / 1000.0f;
@@ -190,7 +236,7 @@ void main_run()
 			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
 			if (difference > 0)
 			{
-				player.current_base = player.current_base + ((difference * player_bubbles->archetype) * 2) + 1;
+				player.addon_base = player.addon_base + 1;
 			}
 		}
 		{
@@ -200,7 +246,7 @@ void main_run()
 			{
 				for (int i = 0; i < difference; i++)
 				{
-					AutoBubble* bubble = spawn_random_auto_bubble(2, 4);
+					AutoBubble* bubble = spawn_random_auto_bubble(0, 1, 2, 1);
 					if (bubble != nullptr) {
 						bubble->archetype = 0;
 					}
@@ -214,8 +260,9 @@ void main_run()
 			{
 				for (int i = 0; i < difference; i++)
 				{
-					int archetype_bias = rand() % 256;
-					AutoBubble* bubble = spawn_random_auto_bubble(archetype_bias / 6, archetype_bias / 4);
+					int archetype_bias = (rand() % 255) + 1;
+					int upper = SDL_max(archetype_bias / 4, 6);
+					AutoBubble* bubble = spawn_random_auto_bubble(archetype_bias, upper, archetype_bias, archetype_bias);
 					if (bubble != nullptr) {
 						bubble->archetype = uint8_t(archetype_bias);
 					}
@@ -242,15 +289,19 @@ void main_run()
 		{
 			double cost = UpgradeCosts[i];
 			int difference = player.current_upgrade_levels[i] - player.previous_upgrades_levels[i];
-			player.current_multiplier = player.current_multiplier + difference;
+			player.addon_multiplier = player.addon_multiplier + (difference * i);
 		}
 
 		SDL_memcpy(player.previous_upgrades_levels, player.current_upgrade_levels,
 			sizeof(player.current_upgrade_levels));
 	}
 
-	post_render_update(&app, &player, &player_ui);
+
+	post_render_update(&app, &player, player_bubbles, 1, auto_bubbles, auto_bubble_capacity, &player_ui, true);
 	post_render_update(&player);
+
+	player.current_base = base_pop;
+	player.current_multiplier = multiplier_pop;
 }
 
 SDL_EnumerationResult fck_print_directory(void* userdata, const char* dirname, const char* fname)
@@ -343,7 +394,7 @@ int main(int argc, char* argv[])
 	setup(&app, auto_bubbles, auto_bubble_capacity);
 	setup(&app, upgrade_bubbles, upgrade_bubble_count);
 
-	post_render_update(&app, &player, &player_ui, true);
+	post_render_update(&app, &player, nullptr, 0, nullptr, 0, &player_ui, true);
 
 	is_running = true;
 	tp = SDL_GetTicks();

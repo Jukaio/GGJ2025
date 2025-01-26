@@ -26,6 +26,9 @@ struct SinglePlayer
 	int previous_upgrades_levels[(int)Upgrade::Count];
 	int current_upgrade_levels[(int)Upgrade::Count];
 
+	uint64_t addon_multiplier;
+	uint64_t addon_base;
+
 	uint64_t previous_money;
 	uint64_t current_money;
 
@@ -150,7 +153,6 @@ struct AutoBubbleIncremental
 
 	// Dynamic
 	uint32_t accumulator;
-	uint32_t amount;
 };
 
 struct AutoBubble
