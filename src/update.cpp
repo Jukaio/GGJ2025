@@ -67,7 +67,7 @@ void update(const App* app,
 	AutoBubble* auto_bubbles,
 	size_t auto_count)
 {
-	const uint32_t emit_count = 4;
+	const uint32_t emit_count = 2;
 
 	for (int i = 0; i < *particle_count; ++i)
 	{
@@ -102,7 +102,7 @@ void update(const App* app,
 
 			if (is_player_clicking)
 			{
-				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
+				uint32_t total_emit_count = (player_bubble->bubble.consecutive_clicks / 32) + emit_count;
 				if (*particle_count + total_emit_count <= particle_capacity)
 				{
 					emit_particles(app, particles + *particle_count, mx, my, bubble_pink_bright, total_emit_count);
@@ -136,14 +136,8 @@ void update(const App* app,
 
 			if (is_player_clicking)
 			{
-				uint32_t total_emit_count = auto_bubble->bubble.consecutive_clicks + emit_count;
-				if (*particle_count + total_emit_count > particle_capacity)
-				{
-					uint32_t difference = particle_capacity - *particle_count;
-					emit_particles(app, particles + difference, mx, my, bubble_pink_bright, difference);
-					*particle_count = particle_capacity;
-				}
-				else
+				uint32_t total_emit_count = (auto_bubble->bubble.consecutive_clicks / 32) + emit_count;
+				if (*particle_count + total_emit_count <= particle_capacity)
 				{
 					emit_particles(app, particles + *particle_count, mx, my, bubble_pink_bright, total_emit_count);
 					*particle_count = *particle_count + total_emit_count;
