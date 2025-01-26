@@ -122,10 +122,11 @@ void load_assets(SDL_Renderer* renderer)
 			SDL_PropertiesID proerties = SDL_CreateProperties();
 
 			SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
-			TTF_Font* font = TTF_OpenFontIO(stream, false, 42);
-			TTF_Font* font_m = TTF_OpenFontIO(stream, false, 28);
-			TTF_Font* font_s = TTF_OpenFontIO(stream, true, 18);
-			TTF_Font* font_xs = TTF_OpenFontIO(stream, true, 12);
+			float fontScale = 0.75f;
+			TTF_Font* font = TTF_OpenFontIO(stream, false, 42 * fontScale);
+			TTF_Font* font_m = TTF_OpenFontIO(stream, false, 28 * fontScale);
+			TTF_Font* font_s = TTF_OpenFontIO(stream, true, 18 * fontScale);
+			TTF_Font* font_xs = TTF_OpenFontIO(stream, true, 12 * fontScale);
 
 			if (font == nullptr)
 			{

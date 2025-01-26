@@ -220,8 +220,9 @@ inline void draw_wallet(const App* app, const SDL_FRect* canvas, SinglePlayerUI*
 	right.w = half_width;
 	right.x = canvas->x + half_width;
 
-	SDL_RenderTexture9Grid(app->renderer, texture, &src, 128.0f, 128.0f, 128.0f, 128.0f, 0.16f, &top);
-	SDL_RenderTexture9Grid(app->renderer, texture, &src, 128.0f, 128.0f, 128.0f, 128.0f, 0.16f, &bottom);
+	float bottom_height = 128.0f * 0.5f;
+	SDL_RenderTexture9Grid(app->renderer, texture, &src, bottom_height, bottom_height, bottom_height, bottom_height, 0.16f, &top);
+	SDL_RenderTexture9Grid(app->renderer, texture, &src, bottom_height, bottom_height, bottom_height, bottom_height, 0.16f, &bottom);
 
 	int measured_width;
 	size_t measured_length;
@@ -386,7 +387,7 @@ inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, SinglePlay
 		float w, h;
 		SDL_Texture* texture = tex[(uint64_t)UpgradeIcons[i]];
 		SDL_GetTextureSize(*tex, &w, &h);
-		SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+		SDL_FRect src = SDL_FRect{ 0, 0, w * 2.0f, h * 2.0f };
 
 		SDL_RenderTexture(app->renderer, texture, &src, &dstIcon);
 
