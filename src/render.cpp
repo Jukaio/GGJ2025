@@ -252,15 +252,15 @@ void render(App* app, UpgradeBubble* bubbles, size_t count)
 
 void render(App* app, SinglePlayerUI* ui)
 {
-	if (!TTF_DrawRendererText(ui->score, 64.0f, 64.0f))
+	if (!TTF_DrawRendererText(ui->score, 564.0f, 128.0f))
 	{
 		SDL_Log(SDL_GetError());
 	};
-	if (!TTF_DrawRendererText(ui->base, 64.0f, 128.0f))
+	if (!TTF_DrawRendererText(ui->base, 564.0f, 192.0f))
 	{
 		SDL_Log(SDL_GetError());
 	};
-	if (!TTF_DrawRendererText(ui->multiplier, 64.0f, 192.0f))
+	if (!TTF_DrawRendererText(ui->multiplier, 564.0f, 256.0f))
 	{
 		SDL_Log(SDL_GetError());
 	};

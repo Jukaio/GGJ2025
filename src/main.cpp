@@ -70,8 +70,8 @@ void main_run() {
 
 	// Update
 	update(&app, &player, player_bubbles, player_bubble_count);
-	update(&app, &player, auto_bubbles, auto_bubble_count);
-	update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
+	//update(&app, &player, auto_bubbles, auto_bubble_count);
+	//update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
 	update(&app, particles, &particle_count, particle_capacity, player_bubbles, player_bubble_count);
 	// Render
 
@@ -80,8 +80,8 @@ void main_run() {
 
 	SDL_RenderClear(app.renderer);
 
-	render(&app, auto_bubbles, auto_bubble_count);
-	render(&app, upgrade_bubbles, upgrade_bubble_count);
+	//render(&app, auto_bubbles, auto_bubble_count);
+	//render(&app, upgrade_bubbles, upgrade_bubble_count);
 	render(&app, player_bubbles, player_bubble_count);
 	render(&app, particles, particle_count);
 	render(&app, &player_ui);
@@ -91,6 +91,7 @@ void main_run() {
 	SDL_GetWindowSize(app.window, &w, &h);
 	canvas.w = w;
 	canvas.h = h;
+	draw_stack_panel_left(&app, &canvas, &player_bubbles[0], &player.current_money);
 	draw_stack_panel(&app, &canvas, &player.current_money);
 
 	SDL_RenderPresent(app.renderer);
