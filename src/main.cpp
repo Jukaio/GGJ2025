@@ -10,7 +10,6 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#include "main.h"
 #endif
 
 constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };

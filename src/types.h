@@ -256,6 +256,6 @@ inline SDL_FRect get_frect(const App* app, const Bubble* bubble)
 inline float get_wobble(float dt)
 {
 	float time = (dt - 0.0f) / 1000.0f;
-	float scale = 1.0f + 0.1f * sinf(time * 5.0f);
+	float scale = 1.0f + 0.1f * SDL_sinf(time * 5.0f);
 	return scale;
 }

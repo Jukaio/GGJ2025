@@ -190,7 +190,12 @@ void load_assets(SDL_Renderer* renderer)
 	{
 		tex[i] = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, 0, 0);
 	}
+
+#ifdef __EMSCRIPTEN__
+	load_assets_from_gen(renderer);
+#else
 	SDL_Thread* thread = SDL_CreateThread(load_assets_from_gen, "Asset Loader", renderer);
+#endif
 }
 
 void destroy_assets()
