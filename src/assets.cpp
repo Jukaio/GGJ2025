@@ -51,13 +51,17 @@ int load_assets_from_gen(void* data)
 	u64 sprite_count = (u64)Sprite::Count;
 
 
-	size_t size;
 	// Maybe free later
+#ifdef EMBED
+	const unsigned char* global_buffer = g_sprite_bin;
+#else
+	size_t size;
 	unsigned char* global_buffer = (unsigned char*)SDL_LoadFile(g_sprite_path, &size);
 	if (global_buffer == nullptr)
 	{
 		return -1;
 	}
+#endif
 
 	TexturesExchangeInData* in_data = (TexturesExchangeInData*)SDL_malloc(sizeof(TexturesExchangeInData));
 	if (in_data == nullptr)
@@ -71,8 +75,8 @@ int load_assets_from_gen(void* data)
 	{
 		AssetRef ref = g_sprite_offsets[i];
 
-		unsigned char* buf = global_buffer;
-		void* begin = buf + ref.offset;
+		const unsigned char* buf = global_buffer;
+		const void* begin = buf + ref.offset;
 
 		SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
 		SDL_Surface* srf = IMG_LoadPNG_IO(stream);
@@ -100,15 +104,19 @@ void load_assets(SDL_Renderer* renderer)
 {
 	// Load fonts
 	{
+#ifdef EMBED
+		const unsigned char* global_buffer = g_font_bin;
+#else
 		size_t size;
 		unsigned char* global_buffer = (unsigned char*)SDL_LoadFile(g_font_path, &size);
+#endif
 		u64 font_count = (u64)Font::Count;
 		for (u64 i = 0; i < (u64)Font::Count; ++i)
 		{
 			AssetRef ref = g_font_offsets[i];
 
-			unsigned char* buf = global_buffer;
-			void* begin = buf + ref.offset;
+			const unsigned char* buf = global_buffer;
+			const void* begin = buf + ref.offset;
 
 			SDL_PropertiesID proerties = SDL_CreateProperties();
 
@@ -149,15 +157,19 @@ void load_assets(SDL_Renderer* renderer)
 				"mono");
 		}
 
+#ifdef EMBED
+		const unsigned char* global_buffer = g_audio_bin;
+#else
 		size_t size;
-		unsigned char* global_buffer = (unsigned char*)SDL_LoadFile(g_audio_path, &size);
-		u64 font_count = (u64)Audio::Count;
+		const unsigned char* global_buffer = (unsigned char*)SDL_LoadFile(g_audio_path, &size);
+#endif
+		u64 audio_count = (u64)Audio::Count;
 		for (u64 i = 0; i < (u64)Audio::Count; ++i)
 		{
 			AssetRef ref = g_audio_offsets[i];
 
-			unsigned char* buf = global_buffer;
-			void* begin = buf + ref.offset;
+			const unsigned char* buf = global_buffer;
+			const void* begin = buf + ref.offset;
 
 			SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
 			Mix_Chunk* chunk = Mix_LoadWAV_IO(stream, true);
