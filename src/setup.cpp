@@ -41,21 +41,25 @@ void setup(App* app, AutoBubble* auto_bubbles, size_t auto_bubble_count)
 	constexpr float radius = 48.0f;
 	constexpr float width = 128.0f;
 	constexpr float height = 96.0f;
-	constexpr float origin_x = 32.0f;
-	constexpr float origin_y = 32.0f;
-	constexpr float offset_y = 112.0f;
 	for (size_t index = 0; index < auto_bubble_count; index++)
 	{
 		AutoBubble* auto_bubble = &auto_bubbles[index];
 		Bubble* bubble = &auto_bubble->bubble;
 
-		auto_bubble->x = origin_x;
-		auto_bubble->y = origin_y + (index * offset_y);
+		animation_create(&auto_bubble->pop_animation, 1.45f, 24, Sprite::BubblePop1, Sprite::BubblePop2,
+			Sprite::BubblePop3, Sprite::BubblePop4, Sprite::BubblePop5, Sprite::BubblePop6, Sprite::BubblePop7,
+			Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11, NO_SPRITE,
+			NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE,
+			NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE);
 
 		auto_bubble->width = width;
 		auto_bubble->height = height;
 
 		auto_bubble->color = bubble_pink_dark;
+
+		auto_bubble->max_radius = 256.0f * 0.3f;
+		auto_bubble->min_radius = 228.0f * 0.3f;
+		auto_bubble->is_dead = true;
 
 		bubble->x = radius;
 		bubble->y = radius;

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <SDL3_mixer/SDL_mixer.h>
 #include <SDL3/SDL.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include "Bouncee.h"
 #include "core.h"
@@ -23,6 +23,9 @@ constexpr SDL_Color bubble_white_bright = SDL_Color{ 255, 255, 255, 255 };
 
 struct SinglePlayer
 {
+	int previous_upgrades_levels[(int)Upgrade::Count];
+	int current_upgrade_levels[(int)Upgrade::Count];
+
 	uint64_t previous_money;
 	uint64_t current_money;
 
@@ -37,7 +40,9 @@ struct SinglePlayerUI
 {
 	char buffer[64];
 
-	struct TTF_Text* score;
+	struct TTF_Text* x;
+
+	struct TTF_Text* money;
 	struct TTF_Text* base;
 	struct TTF_Text* multiplier;
 };
@@ -208,10 +213,32 @@ struct AutoBubble
 
 	SDL_Color color;
 
-	float x;
-	float y;
+	bool is_dead;
+
+	float min_radius;
+	float max_radius;
+	float spawned_at;
 	float width;
 	float height;
+
+	BubbleAnimation pop_animation;
+	float pop_countdown;
+
+	union
+	{
+		uint8_t archetype;
+		struct
+		{
+			uint8_t is_cat : 1;
+			uint8_t is_ghost : 1;
+			uint8_t has_dead_eyes : 1;
+			uint8_t has_sun_glasses : 1;
+			uint8_t has_bow : 1;
+			uint8_t has_tie : 1;
+			uint8_t has_has_glare : 1;
+			uint8_t has_has_weird_mouth : 1;
+		};
+	};
 };
 
 
@@ -241,14 +268,14 @@ struct UpgradeBubble
 void animation_create(BubbleAnimation* animation, float duration, size_t sprite_count, ...);
 void animation_start(BubbleAnimation* animation);
 bool animation_try_get_current(const BubbleAnimation* animation, Sprite* sprite);
-void animation_update(App* app, BubbleAnimation* animation);
+bool animation_update(App* app, BubbleAnimation* animation);
 bool animation_render(App* app, const BubbleAnimation* animation, const Bubble* bubble);
 
 inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
 inline void play(Audio audio) { Mix_PlayChannel(-1, sounds[(u64)audio], 0); }
 
-inline float get_legal_radius(Bubble* bubble)
+inline float get_legal_radius(const Bubble* bubble)
 {
 	float legal_ratio = 1.0f - bubble->paddding_ratio;
 	return bubble->radius * legal_ratio;

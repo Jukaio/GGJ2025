@@ -15,7 +15,6 @@ struct AssetRef
 	uint64_t size;
 };
 
-
 #if _WIN32
 void message_box(const char* title, const char* body);
 #define ASSERT(condition, msg)                                                  \
@@ -127,6 +126,21 @@ struct App
 	float delta_time;
 
 	class UiState* ui;
+};
+
+enum class Upgrade
+{
+	BubbleDoubbler1,
+	BubbleDoubler2,
+	BubbleTripler1,
+	BubbleTriple2,
+
+	AutoBubble1,
+	AutoBubble2,
+	AutoBubble3,
+	AutoBubble4,
+
+	Count
 };
 
 inline void update(KeyboardDevice* keyboard_state)

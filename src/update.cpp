@@ -132,32 +132,8 @@ void update(const App* app,
 
 void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t count)
 {
-	for (size_t index = 0; index < count; index++)
-	{
-		PlayerBubble* bubble = &player_bubbles[index];
-		animation_update(app, &bubble->pop_animation);
-	}
-
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 	bool is_space_press = key_just_down(&app->input.keyboard, SDL_SCANCODE_SPACE);
-
-	{
-		SDL_Scancode scancode_begin = SDL_SCANCODE_1;
-		SDL_Scancode scancode_end = SDL_SCANCODE_9;
-		for (int current = scancode_begin; current <= scancode_end; current++)
-		{
-			if (key_just_down(&app->input.keyboard, (SDL_Scancode)current))
-			{
-				uint64_t bit_index = current - scancode_begin;
-				uint64_t mask = 1ull << bit_index;
-				for (size_t index = 0; index < count; index++)
-				{
-					PlayerBubble* bubble = &player_bubbles[index];
-					bubble->archetype = mask ^ bubble->archetype;
-				}
-			}
-		}
-	}
 
 	for (size_t index = 0; index < count; index++)
 	{
@@ -165,6 +141,7 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 
 		if (player_bubble->pop_animation.state == BubbleAnimationStatePlaying)
 		{
+			animation_update(app, &player_bubble->pop_animation);
 			continue;
 		}
 
@@ -186,7 +163,6 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 				{
 					animation_start(&player_bubble->pop_animation);
 					player_bubble->bubble.consecutive_clicks = 0;
-					play(Audio::PopCrit);
 					break;
 				}
 				const uint32_t sliding_pop_window = 4;
@@ -231,17 +207,45 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 	}
 }
 
-void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
+void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubble* bubbles, size_t count)
 {
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
+
+	int window_width, window_height;
+	SDL_GetWindowSize(app->window, &window_width, &window_height);
+
+	float offset_x = 0.65f * window_width;
+	float offset_y = 0.15f * window_height;
+
 
 	for (size_t index = 0; index < count; index++)
 	{
 		AutoBubble* bubble = &bubbles[index];
 
+		//bubble->bubble.x = offset_x;
+		//bubble->bubble.y = offset_y + (offset_y * index);
+		if (bubble->is_dead) {
+			continue;
+		}
+		if (bubble->pop_animation.state == BubbleAnimationStatePlaying) {
+			if (!animation_update(app, &bubble->pop_animation)) {
+				bubble->is_dead = true;
+			}
+			continue;
+		}
+		bubble->pop_countdown = bubble->pop_countdown - app->delta_time;
+		if (bubble->pop_countdown < 0.0f) {
+			animation_start(&bubble->pop_animation);
+			continue;
+		}
+
+		float t = SDL_sin((app->now - bubble->spawned_at) * 0.5f) * 0.5f + 0.5f;
+		bubble->bubble.radius = lerp(bubble->min_radius, bubble->max_radius,
+			Bouncee::in_elastic(t) + Bouncee::out_elastic(t));
+
 		MouseState const* state = &app->input.mouse.current;
-		float global_x = bubble->bubble.x + bubble->x;
-		float global_y = bubble->bubble.y + bubble->y;
+		float global_x = bubble->bubble.x;
+		float global_y = bubble->bubble.y;
 		float distance = math_distance(state->x, state->y, global_x, global_y);
 		if (player->current_money < bubble->inc.cost)
 		{
@@ -255,7 +259,30 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 
 			if (is_player_clicking)
 			{
-				Mix_PlayChannel(-1, sounds[(u64)Audio::MildPop], 0);
+				bubble->bubble.consecutive_clicks = bubble->bubble.consecutive_clicks + 1;
+				if (bubble->bubble.consecutive_clicks > bubble->bubble.burst_cap)
+				{
+					animation_start(&bubble->pop_animation);
+					continue;
+				}
+				const uint32_t sliding_pop_window = 3;
+				const Audio pops[] = {
+					Audio::Pop0, Audio::Pop1, Audio::Pop2, Audio::Pop3, Audio::Pop4,
+					Audio::Pop5, Audio::Pop6, Audio::Pop7,
+				};
+
+				const uint32_t pop_count = (sizeof(pops) / sizeof(*pops)) - sliding_pop_window;
+
+				const uint32_t burst_difference =
+					bubble->bubble.burst_cap - bubble->bubble.consecutive_clicks;
+				const float frac =
+					SDL_clamp(1.0f - (float(burst_difference) / float(bubble->bubble.burst_cap)), 0.0f, 1.0f);
+				const uint32_t lower_bound = pop_count * frac;
+				const uint32_t upper_bound = (pop_count * frac) + sliding_pop_window;
+				const uint32_t random = rand() % sliding_pop_window;
+
+				Audio target = pops[lower_bound + random];
+				play(target);
 
 				player->current_money = player->current_money - bubble->inc.cost;
 				bubble->inc.amount = bubble->inc.amount + 1;
@@ -324,26 +351,56 @@ void post_render_update(App* app, SinglePlayer* player, SinglePlayerUI* ui, bool
 {
 	if (force || player->previous_money != player->current_money)
 	{
-		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "Money: %llu", player->current_money);
+		if (player->current_money > 9999999999ull) {
+			TTF_SetTextFont(ui->money, fonts_med[(u64)Font::JuicyFruity]);
+		}
+		else {
+			TTF_SetTextFont(ui->money, fonts[(u64)Font::JuicyFruity]);
+		}
+		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "%llu", player->current_money);
 		if (length >= 0)
 		{
-			TTF_SetTextString(ui->score, ui->buffer, length);
+			TTF_SetTextString(ui->money, ui->buffer, 0);
 		}
 	}
 	if (force || player->previous_base != player->current_base)
 	{
-		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "Base: %llu", player->current_base);
+		if (player->current_base > 9999999999ull) {
+			TTF_SetTextFont(ui->base, fonts_tiny[(u64)Font::JuicyFruity]);
+		}
+		else if (player->current_base > 9999999ull) {
+			TTF_SetTextFont(ui->base, fonts_small[(u64)Font::JuicyFruity]);
+		}
+		else if (player->current_base > 9999ull) {
+			TTF_SetTextFont(ui->base, fonts_med[(u64)Font::JuicyFruity]);
+		}
+		else {
+			TTF_SetTextFont(ui->base, fonts[(u64)Font::JuicyFruity]);
+		}
+		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "%llu", player->current_base);
 		if (length >= 0)
 		{
-			TTF_SetTextString(ui->base, ui->buffer, length);
+			TTF_SetTextString(ui->base, ui->buffer, 0);
 		}
 	}
 	if (force || player->previous_multiplier != player->current_multiplier)
 	{
-		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "Multiplier: %llu", player->current_multiplier);
+		if (player->current_multiplier > 9999999999ull) {
+			TTF_SetTextFont(ui->multiplier, fonts_tiny[(u64)Font::JuicyFruity]);
+		}
+		else if (player->current_multiplier > 9999999ull) {
+			TTF_SetTextFont(ui->multiplier, fonts_small[(u64)Font::JuicyFruity]);
+		}
+		else if (player->current_multiplier > 9999ull) {
+			TTF_SetTextFont(ui->multiplier, fonts_med[(u64)Font::JuicyFruity]);
+		}
+		else {
+			TTF_SetTextFont(ui->multiplier, fonts[(u64)Font::JuicyFruity]);
+		}
+		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "%llu", player->current_multiplier);
 		if (length >= 0)
 		{
-			TTF_SetTextString(ui->multiplier, ui->buffer, length);
+			TTF_SetTextString(ui->multiplier, ui->buffer, 0);
 		}
 	}
 }
@@ -356,6 +413,12 @@ void fixed_update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t co
 	for (size_t index = 0; index < count; index++)
 	{
 		AutoBubble* bubble = &bubbles[index];
+		if (bubble->is_dead) {
+			continue;
+		}
+		if (bubble->pop_animation.state == BubbleAnimationStatePlaying) {
+			continue;
+		}
 		AutoBubbleIncremental* inc = &bubble->inc;
 
 		inc->accumulator = inc->accumulator + 1;

@@ -14,8 +14,9 @@ void update(const struct App* app,
 	size_t particle_capacity,
 	struct PlayerBubble* player_bubbles,
 	size_t player_count);
+
 void update(struct App* app, struct SinglePlayer* player, struct PlayerBubble* player_bubbles, size_t count);
-void update(struct App* app, struct SinglePlayer* player, struct AutoBubble* bubbles, size_t count);
+void update(struct App* app, struct SinglePlayer* player, struct PlayerBubble* main_player, struct AutoBubble* bubbles, size_t count);
 void update(struct App* app, struct SinglePlayer* player, struct UpgradeBubble* bubbles, size_t count);
 void fixed_update(struct App* app, struct SinglePlayer* player, struct AutoBubble* bubbles, size_t count);
 void post_render_update(struct SinglePlayer* player);
@@ -26,4 +27,3 @@ void render(struct App* app, struct PlayerBubble* bubbles, size_t count);
 void render(struct App* app, struct AutoBubble* bubbles, size_t count);
 void render(struct App* app, struct Particle* particles, size_t count);
 void render(struct App* app, struct UpgradeBubble* bubbles, size_t count);
-void render(struct App* app, struct SinglePlayerUI* ui);

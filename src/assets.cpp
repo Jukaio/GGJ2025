@@ -1,12 +1,13 @@
 
 #include "assets.h"
 
+#include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_mixer/SDL_mixer.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include <SDL3/SDL.h>
 
-SDL_Texture** tex;
+SDL_Texture* tex[(uint64_t)Sprite::Count + 1];
+TTF_Font* fonts_tiny[(uint64_t)Font::Count];
 TTF_Font* fonts_small[(uint64_t)Font::Count];
 TTF_Font* fonts_med[(uint64_t)Font::Count];
 TTF_Font* fonts[(uint64_t)Font::Count];
@@ -119,11 +120,12 @@ void load_assets(SDL_Renderer* renderer)
 			const void* begin = buf + ref.offset;
 
 			SDL_PropertiesID proerties = SDL_CreateProperties();
-			
+
 			SDL_IOStream* stream = SDL_IOFromConstMem(begin, ref.size);
 			TTF_Font* font = TTF_OpenFontIO(stream, false, 42);
 			TTF_Font* font_m = TTF_OpenFontIO(stream, false, 28);
 			TTF_Font* font_s = TTF_OpenFontIO(stream, true, 18);
+			TTF_Font* font_xs = TTF_OpenFontIO(stream, true, 12);
 
 			if (font == nullptr)
 			{
@@ -132,6 +134,7 @@ void load_assets(SDL_Renderer* renderer)
 			fonts[i] = font;
 			fonts_med[i] = font_m;
 			fonts_small[i] = font_s;
+			fonts_tiny[i] = font_xs;
 		}
 	}
 
@@ -183,7 +186,6 @@ void load_assets(SDL_Renderer* renderer)
 
 	// Load textures
 	u64 sprite_count = (u64)Sprite::Count + 1; // Empty texture in count
-	tex = (SDL_Texture**)SDL_malloc(sizeof(SDL_Texture*) * sprite_count);
 	for (u64 i = 0; i <= (u64)Sprite::Count; ++i)
 	{
 		tex[i] = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, 0, 0);
@@ -199,6 +201,9 @@ void destroy_assets()
 		for (u64 i = 0; i < (u64)Font::Count; ++i)
 		{
 			TTF_CloseFont(fonts[i]);
+			TTF_CloseFont(fonts_med[i]);
+			TTF_CloseFont(fonts_small[i]);
+			TTF_CloseFont(fonts_tiny[i]);
 		}
 	}
 
@@ -207,5 +212,4 @@ void destroy_assets()
 	{
 		SDL_DestroyTexture(tex[i]);
 	}
-	SDL_free(tex);
 }

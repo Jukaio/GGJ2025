@@ -28,6 +28,7 @@ void animation_create(BubbleAnimation* animation, float duration, size_t sprite_
 
 void animation_start(BubbleAnimation* animation)
 {
+	play(Audio::PopCrit);
 	animation->state = BubbleAnimationStatePlaying;
 	animation->accumulator = 0.0f;
 }
@@ -45,14 +46,15 @@ bool animation_try_get_current(const BubbleAnimation* animation, Sprite* sprite)
 	return true;
 }
 
-void animation_update(App* app, BubbleAnimation* animation)
+bool animation_update(App* app, BubbleAnimation* animation)
 {
 	if (animation->accumulator > animation->duration)
 	{
 		animation->state = BubbleAnimationStateStop;
-		return;
+		return false;
 	}
 	animation->accumulator = animation->accumulator + app->delta_time;
+	return true;
 }
 
 static bool is_recolourable(Sprite sprite) {
@@ -197,23 +199,25 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 {
 	for (size_t index = 0; index < count; index++)
 	{
-		const AutoBubble* auto_bubble = &bubbles[index];
+		AutoBubble* auto_bubble = &bubbles[index];
 		const Bubble* bubble = &auto_bubble->bubble;
-
-		{
-			SDL_Color c = auto_bubble->color;
-			SDL_SetRenderDrawColor(app->renderer, c.r, c.g, c.b, c.a);
-
-			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
-			float w, h;
-			SDL_GetTextureSize(texture, &w, &h);
-			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_FRect dst = SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
-
-			SDL_RenderTexture(app->renderer, texture, &src, &dst);
+		if (auto_bubble->is_dead) {
+			continue;
 		}
+		{
+			/*		SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
+					float w, h;
+					SDL_GetTextureSize(texture, &w, &h);
+					SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+					SDL_FRect dst =
+						SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
 
-		render(app, bubble, Sprite::BubbleKot, auto_bubble->x, auto_bubble->y);
+					SDL_RenderTexture(app->renderer, texture, &src, &dst);*/
+		}
+		if (!animation_render(app, &auto_bubble->pop_animation, &auto_bubble->bubble))
+		{
+			render(app, bubble, Sprite::BubbleKot);
+		}
 	}
 }
 
@@ -249,19 +253,3 @@ void render(App* app, UpgradeBubble* bubbles, size_t count)
 	}
 }
 
-
-void render(App* app, SinglePlayerUI* ui)
-{
-	if (!TTF_DrawRendererText(ui->score, 564.0f, 128.0f))
-	{
-		SDL_Log(SDL_GetError());
-	};
-	if (!TTF_DrawRendererText(ui->base, 564.0f, 192.0f))
-	{
-		SDL_Log(SDL_GetError());
-	};
-	if (!TTF_DrawRendererText(ui->multiplier, 564.0f, 256.0f))
-	{
-		SDL_Log(SDL_GetError());
-	};
-}
