@@ -314,14 +314,14 @@ void main_run()
 			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
 			if (difference > 0)
 			{
-				simple_duck.amount = simple_duck.amount + (difference * 2);
-				const float upper_limit = 100.0f;
+				simple_duck.amount = simple_duck.amount + (difference * 8);
+				const float upper_limit = 50.0f;
 
 				float frac = (upper_limit - simple_duck.amount) / upper_limit;
 
 				frac = SDL_clamp(frac * simple_duck.amount, 0.0f, 1.0f);
 
-				simple_duck.duration = lerp(0.125f, 5.0f, frac);
+				simple_duck.duration = lerp(0.100f, 4.8f, frac);
 				simple_duck.accumulator = SDL_min(simple_duck.accumulator, simple_duck.duration);
 			}
 		}
