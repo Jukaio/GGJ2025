@@ -99,6 +99,9 @@ inline bool button(const App* app, const SDL_FRect* btn, Sprite sprite, bool blo
 			SDL_SetTextureColorMod(texture, btn_over_tint.r, btn_over_tint.g, btn_over_tint.b);
 		}
 	}
+	else {
+		SDL_SetTextureColorMod(texture, 200, 200, 200);
+	}
 	SDL_RenderTexture9Grid(app->renderer, texture, &src, 128.0f, 128.0f, 128.0f, 128.0f, 0.16f, btn);
 
 	SDL_SetTextureColorModFloat(texture, 1.0f, 1.0f, 1.0f);
@@ -277,7 +280,7 @@ inline void draw_stack_panel_left(const App* app,
 	for (int i = 0; i < num; ++i)
 	{
 		double cost = SkinCosts[i];
-		bool affordable = (double)*money >= cost;
+		bool affordable = (double)*money >= cost || bub->owned_cosmetics[i];
 		bool will_buy = affordable && bub->owned_cosmetics[i] == false;
 
 		if (button(app, &btn, Sprite::BoxUI, !affordable))
@@ -309,6 +312,8 @@ inline void draw_stack_panel_left(const App* app,
 			{
 				float w, h;
 				SDL_Texture* texture = tex[(uint64_t)SkinIcons[i]];
+				SDL_SetTextureColorMod(texture, 255, 255, 255);
+				SDL_SetTextureAlphaMod(texture, 255);
 				SDL_GetTextureSize(texture, &w, &h);
 				SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 				SDL_RenderTexture(app->renderer, texture, &src, &dst_icon);
