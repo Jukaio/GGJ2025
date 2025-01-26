@@ -63,7 +63,9 @@ void update(const App* app,
 	size_t* particle_count,
 	size_t particle_capacity,
 	PlayerBubble* player_bubbles,
-	size_t player_count)
+	size_t player_count,
+	AutoBubble* auto_bubbles,
+	size_t auto_count)
 {
 	const uint32_t emit_count = 4;
 
@@ -115,6 +117,47 @@ void update(const App* app,
 			}
 		}
 	}
+
+	for (size_t index = 0; index < auto_count; index++)
+	{
+		AutoBubble* player_bubble = &auto_bubbles[index];
+		float mx = is_space_press ? player_bubble->bubble.x : app->input.mouse.current.x;
+		float my = is_space_press ? player_bubble->bubble.y : app->input.mouse.current.y;
+
+		if (player_bubble->pop_animation.state == BubbleAnimationStatePlaying)
+		{
+			continue;
+		}
+
+		float time_difference = app->now - player_bubble->bubble.time_point_last_clicked;
+		if (time_difference > 1.0f)
+		{
+			player_bubble->bubble.consecutive_clicks = 0;
+		}
+
+		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
+		if (distance < get_legal_radius(&player_bubble->bubble) || is_space_press)
+		{
+			bool is_player_clicking = button_just_down(&app->input.mouse, 1) || is_space_press;
+
+			if (is_player_clicking)
+			{
+				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
+				if (*particle_count + total_emit_count > particle_capacity)
+				{
+					uint32_t difference = particle_capacity - *particle_count;
+					emit_particles(app, particles + difference, mx, my, bubble_pink_bright, difference);
+					*particle_count = particle_capacity;
+				}
+				else
+				{
+					emit_particles(app, particles + *particle_count, mx, my, bubble_pink_bright, total_emit_count);
+					*particle_count = *particle_count + total_emit_count;
+				}
+			}
+		}
+	}
+
 	for (int i = 0; i < *particle_count; ++i)
 	{
 		Particle* particle = &particles[i];

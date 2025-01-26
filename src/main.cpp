@@ -198,7 +198,7 @@ void main_run()
 	update(&app, &player, player_bubbles, player_bubble_count);
 	update(&app, &player, player_bubbles, auto_bubbles, auto_bubble_capacity);
 	// update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
-	update(&app, particles, &particle_count, particle_capacity, player_bubbles, player_bubble_count);
+	update(&app, particles, &particle_count, particle_capacity, player_bubbles, player_bubble_count, auto_bubbles, auto_bubble_capacity);
 	// Render
 
 	if (key_just_down(&app.input.keyboard, SDL_SCANCODE_X))
