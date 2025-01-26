@@ -20,6 +20,13 @@ struct PremiumDuck
 	uint32_t amount;
 };
 
+struct LuxuryDuck
+{
+	float accumulator;
+	uint32_t amount;
+};
+
+
 struct SimpleBathtubs
 {
 	float accumulator;
@@ -64,6 +71,8 @@ SimpleDuck simple_duck;
 size_t premium_duck_count;
 PremiumDuck premium_simple_duck[1024];
 
+size_t luxury_duck_count;
+LuxuryDuck luxury_simple_duck[1024];
 
 void cleanup()
 {
@@ -163,7 +172,7 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min,
 			base_line = archetype_owned / 2;
 		}
 
-		player.current_money = pop_reward_money + (1 * (player.current_base * player.current_multiplier));
+		player.current_money = player.current_money + (pop_reward_money + 1 * (player.current_base * player.current_multiplier));
 		player.addon_multiplier = player.addon_multiplier + pop_reward_multiplier;
 		animation_start(&next->pop_animation);
 		return nullptr;
@@ -244,11 +253,6 @@ void main_run()
 		auto_bubble_count);
 	// Render
 
-	if (key_just_down(&app.input.keyboard, SDL_SCANCODE_X))
-	{
-		player.current_money = player.current_money << 1;
-	}
-
 	SDL_SetRenderDrawColor(app.renderer, background_color.r, background_color.g, background_color.b,
 		background_color.a);
 
@@ -305,9 +309,8 @@ void main_run()
 				for (int i = 0; i < difference; i++)
 				{
 					int archetype_bias = (rand() % 255) + 1;
-					int upper = SDL_max(archetype_bias / 4, 6);
 					AutoBubble* bubble =
-						spawn_random_auto_bubble(archetype_bias, upper, archetype_bias, archetype_bias);
+						spawn_random_auto_bubble(archetype_bias, archetype_bias + 2, archetype_bias, archetype_bias);
 					if (bubble != nullptr)
 					{
 						bubble->archetype = uint8_t(archetype_bias);
@@ -358,7 +361,6 @@ void main_run()
 							int archetype_bias = bubble->archetype;
 							player.current_money = player.current_money =
 								archetype_bias + (1 * (player.current_base * player.current_multiplier));
-							player.addon_multiplier = player.addon_multiplier + archetype_bias;
 
 							bubble->bubble.consecutive_clicks = bubble->bubble.consecutive_clicks;
 							player.current_money =
@@ -385,7 +387,53 @@ void main_run()
 			}
 		}
 		{
+			size_t count = SDL_min(luxury_duck_count, SDL_arraysize(luxury_simple_duck));
+			for (int i = 0; i < count; i++)
+			{
+				LuxuryDuck* duck = &luxury_simple_duck[i];
+				duck->accumulator = duck->accumulator + app.delta_time;
+				if (duck->accumulator > 5.0f)
+				{
+					if (auto_bubble_count > 0)
+					{
+						play(Audio::Quak);
+					}
+				}
+				while (duck->accumulator > 5.0f)
+				{
+					// Add a stutter
+					duck->accumulator -= 5.0f - (rand() % 10) / 10.0f;
+					for (int j = 0; j < duck->amount; j++)
+					{
+						if (auto_bubble_count > 0)
+						{
+							size_t random_index = rand() % auto_bubble_count;
+							AutoBubble* bubble = &auto_bubbles[random_index];
+
+							int archetype_bias = bubble->archetype;
+							player.current_money = player.current_money + (bubble->archetype + 1 * (player.current_base * player.current_multiplier));
+							player.addon_multiplier = player.addon_multiplier + bubble->archetype;
+							animation_start(&bubble->pop_animation);
+							break;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+			}
 			uint32_t index = (uint32_t)Upgrade::AutoBubble2;
+			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
+			if (difference > 0)
+			{
+				for (int i = 0; i < difference; i++)
+				{
+					size_t index = luxury_duck_count % SDL_arraysize(luxury_simple_duck);
+					luxury_simple_duck[index].amount++;
+					luxury_duck_count++;
+				}
+			}
 		}
 		{
 			size_t count = SDL_min(simple_bathtub_count, SDL_arraysize(simple_bathtubs));
@@ -433,10 +481,8 @@ void main_run()
 					for (int j = 0; j < tub->amount; j++)
 					{
 						int archetype_bias = (rand() % 255) + 1;
-						int upper = SDL_max(archetype_bias / 4, 6);
-
 						AutoBubble* bubble =
-							spawn_random_auto_bubble(archetype_bias, upper, archetype_bias, archetype_bias);
+							spawn_random_auto_bubble(archetype_bias, archetype_bias + 2, archetype_bias, archetype_bias);
 						if (bubble != nullptr)
 						{
 							bubble->archetype = uint8_t(archetype_bias);
@@ -549,7 +595,6 @@ int main(int argc, char* argv[])
 	text_engine = TTF_CreateRendererTextEngine(app.renderer);
 	player.current_base = 1;
 	player.current_multiplier = 1;
-
 
 	for (int index = 0; index < (int)Upgrade::Count; index++)
 	{

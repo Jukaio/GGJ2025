@@ -120,29 +120,29 @@ void update(const App* app,
 
 	for (size_t index = 0; index < auto_count; index++)
 	{
-		AutoBubble* player_bubble = &auto_bubbles[index];
-		float mx = is_space_press ? player_bubble->bubble.x : app->input.mouse.current.x;
-		float my = is_space_press ? player_bubble->bubble.y : app->input.mouse.current.y;
+		AutoBubble* auto_bubble = &auto_bubbles[index];
+		float mx = app->input.mouse.current.x;
+		float my = app->input.mouse.current.y;
 
-		if (player_bubble->pop_animation.state == BubbleAnimationStatePlaying)
+		if (auto_bubble->pop_animation.state == BubbleAnimationStatePlaying)
 		{
 			continue;
 		}
 
-		float time_difference = app->now - player_bubble->bubble.time_point_last_clicked;
+		float time_difference = app->now - auto_bubble->bubble.time_point_last_clicked;
 		if (time_difference > 1.0f)
 		{
-			player_bubble->bubble.consecutive_clicks = 0;
+			auto_bubble->bubble.consecutive_clicks = 0;
 		}
 
-		float distance = math_distance(mx, my, player_bubble->bubble.x, player_bubble->bubble.y);
-		if (distance < get_legal_radius(&player_bubble->bubble) || is_space_press)
+		float distance = math_distance(mx, my, auto_bubble->bubble.x, auto_bubble->bubble.y);
+		if (distance < get_legal_radius(&auto_bubble->bubble))
 		{
-			bool is_player_clicking = button_just_down(&app->input.mouse, 1) || is_space_press;
+			bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 
 			if (is_player_clicking)
 			{
-				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
+				uint32_t total_emit_count = auto_bubble->bubble.consecutive_clicks + emit_count;
 				if (*particle_count + total_emit_count > particle_capacity)
 				{
 					uint32_t difference = particle_capacity - *particle_count;
@@ -353,7 +353,7 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 				bubble->bubble.consecutive_clicks = bubble->bubble.consecutive_clicks + 1;
 				if (bubble->bubble.consecutive_clicks > bubble->bubble.burst_cap)
 				{
-					player->current_money =
+					player->current_money = player->current_money +
 						bubble->archetype + (1 * (player->current_base * player->current_multiplier));
 					animation_start(&bubble->pop_animation);
 					continue;
