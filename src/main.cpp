@@ -112,71 +112,55 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min,
 	int pop_reward_multiplier)
 {
 	AutoBubble* next = nullptr;
-	for (size_t j = 0; j < auto_bubble_capacity; j++)
+
+	if (auto_bubble_count >= auto_bubble_capacity)
 	{
-		AutoBubble* auto_bubble = &auto_bubbles[j];
-		if (auto_bubble->is_dead)
-		{
-			auto_bubble_count++;
-
-			auto_bubble->pop_countdown = (rand() % 15) + 20;
-			auto_bubble->spawned_at = app.now;
-			next = auto_bubble;
-			next->is_dead = false;
-			auto_bubble->bubble.consecutive_clicks = 0;
-			auto_bubble->bubble.burst_cap = (rand() % (burst_max - burst_min)) + burst_min;
-			auto_bubble->pop_animation.state = BubbleAnimationStateStop;
-
-			int window_width, window_height;
-			SDL_GetWindowSize(app.window, &window_width, &window_height);
-			float window_width_half = window_width / 2.0f;
-			float window_height_half = window_height / 2.0f;
-
-			auto_bubble->max_radius = 256.0f * 0.3f;
-			auto_bubble->min_radius = 228.0f * 0.3f;
-
-			float difference = auto_bubble->max_radius - auto_bubble->min_radius;
-
-			auto_bubble->min_radius = (rand() % 32) + auto_bubble->min_radius;
-			auto_bubble->max_radius = auto_bubble->min_radius + difference;
-			next->bubble.x = (rand() % int(window_width * 0.8f)) + int(window_width * 0.1f);
-			next->bubble.y = (rand() % int(window_height * 0.8f)) + int(window_height * 0.1f);
-			for (size_t iterations = 0; iterations < 8; iterations++)
-			{
-				if (!bubble_bubble_intersection(&player_bubbles->bubble, &next->bubble))
-				{
-					break;
-				}
-				next->bubble.x = (rand() % int(window_width * 0.8f)) + int(window_width * 0.1f);
-				next->bubble.y = (rand() % int(window_height * 0.8f)) + int(window_height * 0.1f);
-			}
-			break;
-		}
-	}
-	if (next == nullptr)
-	{
-		next = &auto_bubbles[rand() % auto_bubble_capacity];
+		AutoBubble* next = &auto_bubbles[rand() % auto_bubble_capacity];
 		next->pop_countdown = 0;
 
-		uint64_t base_line = 0;
-		for (int i = 0; i < player_bubble_count; i++)
-		{
-			uint32_t archetype_owned = 0;
-			for (int j = 0; j < 16; j++)
-			{
-				if (player_bubbles[i].owned_cosmetics[j])
-				{
-					archetype_owned |= 1 << j;
-				}
-			}
-			base_line = archetype_owned / 2;
-		}
-
-		player.current_money = player.current_money + (pop_reward_money + 1 * (player.current_base * player.current_multiplier));
+		player.current_money =
+			player.current_money + (pop_reward_money + 1 * (player.current_base * player.current_multiplier));
 		player.addon_multiplier = player.addon_multiplier + pop_reward_multiplier;
 		animation_start(&next->pop_animation);
 		return nullptr;
 	}
+
+
+	AutoBubble* auto_bubble = &auto_bubbles[auto_bubble_count];
+	auto_bubble_count++;
+
+	auto_bubble->pop_countdown = (rand() % 15) + 20;
+	auto_bubble->spawned_at = app.now;
+	next = auto_bubble;
+	next->is_dead = false;
+	auto_bubble->bubble.consecutive_clicks = 0;
+	auto_bubble->bubble.burst_cap = (rand() % (burst_max - burst_min)) + burst_min;
+	auto_bubble->pop_animation.state = BubbleAnimationStateStop;
+
+	int window_width, window_height;
+	SDL_GetWindowSize(app.window, &window_width, &window_height);
+	float window_width_half = window_width / 2.0f;
+	float window_height_half = window_height / 2.0f;
+
+	auto_bubble->max_radius = 256.0f * 0.3f;
+	auto_bubble->min_radius = 228.0f * 0.3f;
+
+	float difference = auto_bubble->max_radius - auto_bubble->min_radius;
+
+	auto_bubble->min_radius = (rand() % 32) + auto_bubble->min_radius;
+	auto_bubble->max_radius = auto_bubble->min_radius + difference;
+	next->bubble.x = (rand() % int(window_width * 0.8f)) + int(window_width * 0.1f);
+	next->bubble.y = (rand() % int(window_height * 0.8f)) + int(window_height * 0.1f);
+	for (size_t iterations = 0; iterations < 8; iterations++)
+	{
+		if (!bubble_bubble_intersection(&player_bubbles->bubble, &next->bubble))
+		{
+			break;
+		}
+		next->bubble.x = (rand() % int(window_width * 0.8f)) + int(window_width * 0.1f);
+		next->bubble.y = (rand() % int(window_height * 0.8f)) + int(window_height * 0.1f);
+	}
+
 	play(Audio::MildPop);
 	return next;
 }
@@ -411,7 +395,9 @@ void main_run()
 							AutoBubble* bubble = &auto_bubbles[random_index];
 
 							int archetype_bias = bubble->archetype;
-							player.current_money = player.current_money + (bubble->archetype + 1 * (player.current_base * player.current_multiplier));
+							player.current_money =
+								player.current_money +
+								(bubble->archetype + 1 * (player.current_base * player.current_multiplier));
 							player.addon_multiplier = player.addon_multiplier + bubble->archetype;
 							animation_start(&bubble->pop_animation);
 							break;
@@ -481,8 +467,8 @@ void main_run()
 					for (int j = 0; j < tub->amount; j++)
 					{
 						int archetype_bias = (rand() % 255) + 1;
-						AutoBubble* bubble =
-							spawn_random_auto_bubble(archetype_bias, archetype_bias + 2, archetype_bias, archetype_bias);
+						AutoBubble* bubble = spawn_random_auto_bubble(archetype_bias, archetype_bias + 2,
+							archetype_bias, archetype_bias);
 						if (bubble != nullptr)
 						{
 							bubble->archetype = uint8_t(archetype_bias);
