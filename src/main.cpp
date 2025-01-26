@@ -34,6 +34,23 @@ Particle particles[particle_capacity];
 bool is_running;
 milliseconds tp;
 
+void cleanup()
+{
+	destroy_assets();
+
+	TTF_DestroyRendererTextEngine(text_engine);
+
+	SDL_DestroyRenderer(app.renderer);
+
+	SDL_DestroyWindow(app.window);
+
+	Mix_Quit();
+
+	TTF_Quit();
+
+	SDL_Quit();
+}
+
 void main_run() {
 	milliseconds now = SDL_GetTicks();
 	milliseconds delta_time = now - tp;
@@ -98,23 +115,6 @@ void main_run() {
 
 	post_render_update(&app, &player, &player_ui);
 	post_render_update(&player);
-}
-
-void cleanup()
-{
-	destroy_assets();
-
-	TTF_DestroyRendererTextEngine(text_engine);
-
-	SDL_DestroyRenderer(app.renderer);
-
-	SDL_DestroyWindow(app.window);
-
-	Mix_Quit();
-
-	TTF_Quit();
-
-	SDL_Quit();
 }
 
 SDL_EnumerationResult fck_print_directory(void* userdata, const char* dirname, const char* fname)
@@ -218,9 +218,9 @@ int main(int argc, char* argv[])
 	emscripten_set_main_loop(main_run, 0, 1);
 #else
 	while (is_running) { main_run(); }
+	cleanup();
 #endif
 
-	cleanup();
 
 	return 0;
 }
