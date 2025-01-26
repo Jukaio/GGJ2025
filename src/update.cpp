@@ -212,11 +212,17 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 
 				player->current_money = player->current_money + (player->current_base * player->current_multiplier);
 				player_bubble->bubble.time_point_last_clicked = app->now;
+
+				player_bubble->bubble.color = bubble_blue_dark;
+			}
+			else
+			{
+				player_bubble->bubble.color = bubble_blue;
 			}
 		}
 		else
 		{
-			player_bubble->bubble.color = bubble_blue_bright;
+			player_bubble->bubble.color = bubble_white_bright;
 
 			t = SDL_sin(app->now * 0.5f) * 0.5f + 0.5f;
 			player_bubble->bubble.y = lerp(player_bubble->bubble.yMin, player_bubble->bubble.yMax,
@@ -254,11 +260,16 @@ void update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t count)
 				player->current_money = player->current_money - bubble->inc.cost;
 				bubble->inc.amount = bubble->inc.amount + 1;
 				bubble->bubble.time_point_last_clicked = app->now;
+				bubble->bubble.color = bubble_blue_dark;
+			}
+			else
+			{
+				bubble->bubble.color = bubble_blue;
 			}
 		}
 		else
 		{
-			bubble->bubble.color = bubble_blue_bright;
+			bubble->bubble.color = bubble_white_bright;
 		}
 	}
 }
@@ -287,18 +298,23 @@ void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count
 
 			if (is_player_clicking)
 			{
-				Mix_PlayChannel(-1, sounds[(u64)Audio::MildPop], 0);
+				play(Audio::MildPop);
 
 				player->current_money = player->current_money - bubble->inc.cost;
 				player->current_base = player->current_base + bubble->inc.base_bonus;
 				player->current_multiplier = player->current_multiplier + bubble->inc.multiplier_bonus;
 
 				bubble->bubble.time_point_last_clicked = app->now;
+				bubble->bubble.color = bubble_blue_dark;
+			}
+			else
+			{
+				bubble->bubble.color = bubble_blue;
 			}
 		}
 		else
 		{
-			bubble->bubble.color = bubble_blue_bright;
+			bubble->bubble.color = bubble_white_bright;
 		}
 	}
 }

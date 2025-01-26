@@ -55,6 +55,23 @@ void animation_update(App* app, BubbleAnimation* animation)
 	animation->accumulator = animation->accumulator + app->delta_time;
 }
 
+static bool is_recolourable(Sprite sprite) {
+	switch (sprite) {
+	case Sprite::BubbleGhostEyes:
+	case Sprite::BubbleDead:
+	case Sprite::BubbleWeirdMouth:
+	case Sprite::BubbleGlasses:
+	case Sprite::BubbleSunglasses:
+	case Sprite::BubbleSunglassesPink:
+	case Sprite::BubbleBow:
+	case Sprite::BubblesTie:
+	case Sprite::BubbleDevil:
+	case Sprite::BubbleAngel:
+		return false;
+	}
+	return true;
+}
+
 bool animation_render(App* app, const BubbleAnimation* animation, const Bubble* bubble)
 {
 	Sprite sprite;
@@ -66,15 +83,17 @@ bool animation_render(App* app, const BubbleAnimation* animation, const Bubble* 
 	return false;
 }
 
-void render(App* app, const Bubble* bubble, Sprite sprite, float offset_x, float offset_y, bool recolor)
+void render(App* app, const Bubble* bubble, Sprite sprite, float offset_x, float offset_y)
 {
 	SDL_Color c = bubble->color;
 
 	SDL_Texture* texture = tex[(uint64_t)sprite];
-	if (recolor)
+
+	if (is_recolourable(sprite))
 	{
 		SDL_SetTextureColorMod(texture, c.r, c.g, c.b);
 	}
+
 	SDL_SetTextureAlphaMod(texture, c.a);
 
 	float w, h;
@@ -118,7 +137,6 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			{
 				render(app, bubble, Sprite::BubbleBase);
 			}
-
 			else if (player_bubble->is_cat && player_bubble->is_ghost)
 			{
 				render(app, bubble, Sprite::BubbleGhostCat);
@@ -151,9 +169,9 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			{
 				render(app, bubble, Sprite::BubbleGlasses);
 			}
-			if (player_bubble->has_sun_glasses)
+			if (player_bubble->has_sun_glasses, false)
 			{
-				render(app, bubble, Sprite::BubbleSunglassesPink);
+				render(app, bubble, Sprite::BubbleSunglassesPink, false);
 			}
 			if (player_bubble->has_devil_horns)
 			{
