@@ -242,24 +242,34 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 		else
 		{
 			player_bubble->bubble.color = bubble_white_bright;
-
-			t = app->now * 0.5f;
-			float radiusX = (player_bubble->bubble.xMax - player_bubble->bubble.xMin) / 2.0f;
-			float radiusY = (player_bubble->bubble.yMax - player_bubble->bubble.yMin) / 2.0f;
-			float centerX = (player_bubble->bubble.xMax + player_bubble->bubble.xMin) / 2.0f;
-			float centerY = (player_bubble->bubble.yMax + player_bubble->bubble.yMin) / 2.0f;
-
-			float zigzagFrequency = 3.0f;
-			float zigzagAmplitude = 0.2f;
-
-			float zigzagModulation = 1.0f + zigzagAmplitude * SDL_sin(app->now * zigzagFrequency);
-
-			radiusX = radiusX * zigzagModulation;
-			radiusY = radiusY * zigzagModulation;
-
-			player_bubble->bubble.x = centerX + SDL_cos(t) * radiusX;
-			player_bubble->bubble.y = centerY + SDL_sin(t) * radiusY;
 		}
+
+		int window_width, window_height;
+		SDL_GetWindowSize(app->window, &window_width, &window_height);
+		int window_width_half = window_width / 2;
+		int window_height_half = window_height / 2;
+
+		player_bubbles->bubble.xMax = window_width_half - 256.0f * 0.25f;
+		player_bubbles->bubble.xMin = window_width_half + 256.0f * 0.25f;
+		player_bubbles->bubble.yMax = window_height_half - 256.0f * 0.5f;
+		player_bubbles->bubble.yMin = window_height_half + 256.0f * 0.5f;
+
+		t = app->now * 0.5f;
+		float radiusX = (player_bubble->bubble.xMax - player_bubble->bubble.xMin) / 2.0f;
+		float radiusY = (player_bubble->bubble.yMax - player_bubble->bubble.yMin) / 2.0f;
+		float centerX = (player_bubble->bubble.xMax + player_bubble->bubble.xMin) / 2.0f;
+		float centerY = (player_bubble->bubble.yMax + player_bubble->bubble.yMin) / 2.0f;
+
+		float zigzagFrequency = 3.0f;
+		float zigzagAmplitude = 0.2f;
+
+		float zigzagModulation = 1.0f + zigzagAmplitude * SDL_sin(app->now * zigzagFrequency);
+
+		radiusX = radiusX * zigzagModulation;
+		radiusY = radiusY * zigzagModulation;
+
+		player_bubble->bubble.x = centerX + SDL_cos(t) * radiusX;
+		player_bubble->bubble.y = centerY + SDL_sin(t) * radiusY;
 	}
 }
 
