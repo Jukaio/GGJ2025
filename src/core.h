@@ -132,8 +132,8 @@ enum class Upgrade
 {
 	BubbleDoubbler1,
 	BubbleDoubler2,
-	BubbleTripler1,
 	BubbleTriple2,
+	BubbleTripler1,
 
 	AutoBubble1,
 	AutoBubble3,

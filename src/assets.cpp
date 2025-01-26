@@ -205,10 +205,10 @@ void destroy_assets()
 		u64 font_count = (u64)Font::Count;
 		for (u64 i = 0; i < font_count; ++i)
 		{
-			TTF_CloseFont(fonts[i]);
-			TTF_CloseFont(fonts_med[i]);
-			TTF_CloseFont(fonts_small[i]);
-			TTF_CloseFont(fonts_tiny[i]);
+			//TTF_CloseFont(fonts[i]);
+			//TTF_CloseFont(fonts_med[i]);
+			//TTF_CloseFont(fonts_small[i]);
+			//TTF_CloseFont(fonts_tiny[i]);
 		}
 	}
 

@@ -232,16 +232,16 @@ bool animation_render(App* app, const BubbleAnimation* animation, const Bubble* 
 inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
 inline void play(Audio audio) { Mix_PlayChannel(-1, sounds[(u64)audio], 0); }
-inline void playLoop(Audio audio) { 
+inline void playLoop(Audio audio) {
 	sounds[(u64)audio]->volume = sounds[(u64)audio]->volume * 0.8f;
-	Mix_PlayChannel(-1, sounds[(u64)audio], -1); }
+	Mix_PlayChannel(-1, sounds[(u64)audio], -1);
+}
 
 inline float get_legal_radius(const Bubble* bubble)
 {
 	float legal_ratio = 1.0f - bubble->paddding_ratio;
 	return bubble->radius * legal_ratio;
 }
-
 
 inline SDL_Rect get_rect(const Bubble* bubble)
 {

@@ -22,16 +22,16 @@ const Sprite UpgradeIcons[] = { Sprite::UpgradeDeadFish,  Sprite::UpgradeSoapUse
 							   Sprite::UpgradeDuck,      Sprite::UpgradeDuckNeon,
 							   Sprite::UpgradeBathEmpty, Sprite::UpgradeDuckBetter, Sprite::UpgradeBath };
 
-const char* UpgradeNames[] = { "Dead Fish", "Used Soap",   "Soap",       "Duck",
+const char* UpgradeNames[] = { "Dead Fish", "Used Soap",  "Duck",  "Soap",
 							  "Neon Duck", "Empty Bath", "Better Duck", "Full Bath" };
 
-const double UpgradeCostsIncrement[] = { 2,   15.0,  200.0,  2000.0,
+const double UpgradeCostsIncrement[] = { 2,   50.0,  200.0,  2500.0,
 
-							   2500.0, 7500.0, 50000.0, 100000.0 };
+							   5000.0, 500000.0, 1000000.0, 1000000.0 };
 
-double UpgradeCosts[] = { 50.0,   100.0,  2000.0,  20000.0,
+double UpgradeCosts[] = { 50.0,   100.0,  2000.0,  10000.0,
 
-							   25000.0, 75000.0, 500000.0, 1000000.0 };
+							   25000.0, 1000000.0, 5000000.0, 10000000.0 };
 
 const double SkinCosts[] = { 100.0,   200.0,   500.0,    1000.0,   2500.0,   5000.0, 7500.0,  10000.0,
 							20000.0, 50000.0, 70000.0, 100000.0, 200000.0, 300000.0 };
