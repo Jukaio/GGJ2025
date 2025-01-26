@@ -49,13 +49,13 @@ const Sprite UpgradeIcons[] =
 const char* UpgradeNames[] =
 {
     "Dead Fish",
-    "Soap Used",
+    "Used Soap",
     "Soap",
     "Duck",
-    "Duck Neon",
-    "Duck Better",
-    "Bath Empty",
-    "Bath Full"
+    "Neon Duck",
+    "Better Duck",
+    "Empty Bath",
+    "Full Bath"
 };
 
 const double UpgradeCosts[] =
