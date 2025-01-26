@@ -20,7 +20,7 @@ static void emit_particles(const App* app, Particle* particles, int x, int y, SD
 	for (int i = 0; i < count; ++i)
 	{
 		float angle = (float)(rand()) / RAND_MAX * 2.0f * PI;
-		float speed = (float)(rand()) / RAND_MAX * 220.0f + 125.0f;
+		float speed = (float)(rand()) / RAND_MAX * 420.0f + 55.0f;
 		float radius = (float)(rand()) / RAND_MAX * 30 + 8.0f;
 
 		Particle* particle = &particles[i];

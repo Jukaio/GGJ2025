@@ -89,6 +89,15 @@ void cleanup()
 	SDL_Quit();
 }
 
+#ifdef __EMSCRIPTEN__
+static bool g_display_size_changed = false;
+static EM_BOOL on_web_display_size_changed( int event_type, const EmscriptenUiEvent *event, void *user_data )
+{
+	display_size_changed = true;
+	return 0;
+}
+#endif
+
 static bool bubble_bubble_intersection(const Bubble* lhs, const Bubble* rhs)
 {
 	float alpha = get_legal_radius(lhs);
@@ -185,6 +194,17 @@ void main_run()
 		emscripten_cancel_main_loop(); /* this should "kill" the app. */
 #endif
 	}
+
+#ifdef __EMSCRIPTEN__
+	if (g_display_size_changed)
+	{
+		double w, h;
+		emscripten_get_element_css_size( "#canvas", &w, &h );
+		SDL_SetWindowSize( sdl_window, (int)w, (int) h );
+
+		g_display_size_changed = false;
+	}
+#endif
 
 	// Input
 	update(&app.input);
@@ -507,7 +527,6 @@ void main_run()
 	player.current_multiplier = multiplier_pop;
 }
 
-
 int main(int argc, char* argv[])
 {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
@@ -530,7 +549,7 @@ int main(int argc, char* argv[])
 	SDL_zero(*app.upgrades);
 
 	app.tick_frequency = 0.25f;
-	app.window = SDL_CreateWindow("Bubble Clicker", 1920, 1080, SDL_WINDOW_RESIZABLE);
+	app.window = SDL_CreateWindow("Bubble Clicker", 1280, 720, SDL_WINDOW_RESIZABLE);
 	if (app.window == nullptr)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
@@ -543,6 +562,8 @@ int main(int argc, char* argv[])
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
 		return -1;
 	}
+
+
 
 	load_assets(app.renderer);
 
@@ -574,6 +595,11 @@ int main(int argc, char* argv[])
 	tp = SDL_GetTicks();
 
 #ifdef __EMSCRIPTEN__
+	emscripten_set_resize_callback(
+		EMSCRIPTEN_EVENT_TARGET_WINDOW,
+		0, 0, on_web_display_size_changed
+	);
+
 	emscripten_set_main_loop(main_run, 0, 1);
 #else
 	while (is_running)
