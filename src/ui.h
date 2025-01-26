@@ -10,8 +10,8 @@
 constexpr float UiTabWidthScale = 0.06;
 constexpr float UiTabHeightScale = 0.08;
 
-const SDL_Color btn_over_tint = { 198, 231, 228, 255 };
-const SDL_Color btn_press_tint = { 129, 191, 183, 255 };
+const SDL_Color btn_over_tint = bubble_pink_bright;
+const SDL_Color btn_press_tint = bubble_pink;
 
 struct Button
 {
@@ -22,8 +22,8 @@ const Sprite UpgradeIcons[] = { Sprite::UpgradeDeadFish,  Sprite::UpgradeSoapUse
 							   Sprite::UpgradeDuck,      Sprite::UpgradeDuckNeon, Sprite::UpgradeDuckBetter,
 							   Sprite::UpgradeBathEmpty, Sprite::UpgradeBath };
 
-const char* UpgradeNames[] = { "Dead Fish", "Soap Used",   "Soap",       "Duck",
-							  "Duck Neon", "Duck Better", "Bath Empty", "Bath Full" };
+const char* UpgradeNames[] = { "Dead Fish", "Used Soap",   "Soap",       "Duck",
+							  "Neon Duck", "Better Duck", "Empty Bath", "Full Bath" };
 
 const double UpgradeCosts[] = { 50.0,   100.0,  200.0,  800.0,
 
@@ -275,7 +275,7 @@ inline void draw_stack_panel_left(const App* app,
 		bool affordable = (double)*money >= cost;
 		bool will_buy = affordable && bub->owned_cosmetics[i] == false;
 
-		if (button(app, &btn, Sprite::BoxUI2))
+		if (button(app, &btn, Sprite::BoxUI))
 		{
 			if (will_buy)
 			{
@@ -356,7 +356,7 @@ inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, SinglePlay
 	{
 		double cost = UpgradeCosts[i];
 		bool affordable = (double)*money >= cost;
-		if (button(app, &btn, Sprite::BoxUI2))
+		if (button(app, &btn, Sprite::BoxUI))
 		{
 			if (affordable)
 			{

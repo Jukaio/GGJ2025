@@ -10,7 +10,7 @@
 
 typedef uint64_t milliseconds;
 
-constexpr SDL_Color background_color = SDL_Color{ 129, 191, 183, 255 };
+constexpr SDL_Color background_color = SDL_Color{ 255, 212, 222, 255 };
 constexpr SDL_Color bubble_pink_bright = SDL_Color{ 255, 212, 222, 255 };
 constexpr SDL_Color bubble_pink = SDL_Color{ 243, 162, 190, 255 };
 constexpr SDL_Color bubble_pink_dark = SDL_Color{ 212, 93, 135, 255 };
