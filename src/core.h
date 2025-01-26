@@ -115,7 +115,7 @@ struct App
 {
 	struct SDL_Window* window;
 	struct SDL_Renderer* renderer;
-	class Upgrades* upgrades;
+	struct Upgrades* upgrades;
 
 	InputDevice input;
 
@@ -125,7 +125,7 @@ struct App
 	float now;
 	float delta_time;
 
-	class UiState* ui;
+	struct UiState* ui;
 };
 
 enum class Upgrade
