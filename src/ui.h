@@ -142,11 +142,13 @@ struct UiState
 
 inline bool button(const App* app, const SDL_FRect* btn, Sprite sprite, bool blocked = false)
 {
+
 	const MouseDevice* m = &app->input.mouse;
 	SDL_FRect mouse_rect{ m->current.x, m->current.y, 1, 1 };
 	SDL_FRect _;
 	bool overlap = SDL_GetRectIntersectionFloat(btn, &mouse_rect, &_);
 
+	SDL_FRect final_btn = *btn;
 	SDL_Texture* texture = tex[(uint64_t)sprite];
 	float w, h;
 	SDL_GetTextureSize(texture, &w, &h);
@@ -154,19 +156,31 @@ inline bool button(const App* app, const SDL_FRect* btn, Sprite sprite, bool blo
 
 	if (!blocked)
 	{
+		float size_mul = SDL_sin(SDL_GetTicks() / 300.0f ) * 0.03f + 1.0f;
+		float pressed_size = 0.92f;
+
 		if (overlap && button_down(m, 1))
 		{
 			SDL_SetTextureColorMod(texture, btn_press_tint.r, btn_press_tint.g, btn_press_tint.b);
+			final_btn.w *= pressed_size;
+			final_btn.h *= pressed_size;
+			final_btn.x += 0.5f * (btn->w - final_btn.w);
+			final_btn.y += 0.5f * (btn->h - final_btn.h);
 		}
 		else if (overlap)
 		{
 			SDL_SetTextureColorMod(texture, btn_over_tint.r, btn_over_tint.g, btn_over_tint.b);
+
+			final_btn.w *= size_mul;
+			final_btn.h *= size_mul;
+			final_btn.x += 0.5f * (btn->w - final_btn.w);
+			final_btn.y += 0.5f * (btn->h - final_btn.h);
 		}
 	}
 	else {
 		SDL_SetTextureColorMod(texture, 200, 200, 200);
 	}
-	SDL_RenderTexture9Grid(app->renderer, texture, &src, 128.0f, 128.0f, 128.0f, 128.0f, 0.16f, btn);
+	SDL_RenderTexture9Grid(app->renderer, texture, &src, 128.0f, 128.0f, 128.0f, 128.0f, 0.16f, &final_btn);
 
 	SDL_SetTextureColorModFloat(texture, 1.0f, 1.0f, 1.0f);
 
