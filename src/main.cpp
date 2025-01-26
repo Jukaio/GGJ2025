@@ -536,7 +536,7 @@ int main(int argc, char* argv[])
 	SDL_zero(*app.upgrades);
 
 	app.tick_frequency = 0.25f;
-	app.window = SDL_CreateWindow("Bubble Clicker", 1280, 720, SDL_WINDOW_RESIZABLE);
+	app.window = SDL_CreateWindow("Bubble Clicker", 1400, 800, SDL_WINDOW_RESIZABLE);
 	if (app.window == nullptr)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
