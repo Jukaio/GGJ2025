@@ -293,7 +293,7 @@ inline void draw_stack_panel_left(const App* app, const SDL_FRect* canvas, Playe
 		bool affordable = (double)*money >= cost;
 		bool will_buy = affordable && bub->owned_cosmetics[i] == false;
 
-		if (button(app, &btn, Sprite::BoxUI2))
+		if (button(app, &btn, Sprite::BoxUI))
 		{
 			if (will_buy)
 			{
@@ -360,7 +360,7 @@ inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, u64* money
 	{
 		double cost = UpgradeCosts[i];
 		bool affordable = (double)*money >= cost;
-		if (button(app, &btn, Sprite::BoxUI2))
+		if (button(app, &btn, Sprite::BoxUI))
 		{
 			if (affordable)
 			{
