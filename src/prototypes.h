@@ -8,12 +8,14 @@ void setup(struct App* app, struct AutoBubble* auto_bubbles, size_t auto_bubble_
 void setup(struct App* app, struct UpgradeBubble* upgrade_bubbles, size_t auto_bubble_count);
 
 
-void update(const struct App* app,
+void update(const App* app,
 	struct Particle* particles,
 	size_t* particle_count,
 	size_t particle_capacity,
 	struct PlayerBubble* player_bubbles,
-	size_t player_count);
+	size_t player_count,
+	struct AutoBubble* auto_bubbles,
+	size_t auto_count);
 
 void update(struct App* app, struct SinglePlayer* player, struct PlayerBubble* player_bubbles, size_t count);
 void update(struct App* app, struct SinglePlayer* player, struct PlayerBubble* main_player, struct AutoBubble* bubbles, size_t count);
