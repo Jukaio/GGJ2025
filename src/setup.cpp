@@ -8,7 +8,7 @@ constexpr float bubble_click_scale = 0.60f;
 void setup(App* app, PlayerBubble* player_bubbles, size_t count)
 {
 	int window_width, window_height;
-	SDL_GetWindowSize(app->window, &window_width, &window_height);
+	GetWindowSizeI(app->window, &window_width, &window_height);
 	int window_width_half = window_width / 2;
 	int window_height_half = window_height / 2;
 
@@ -83,7 +83,7 @@ void setup(App* app, AutoBubble* auto_bubbles, size_t auto_bubble_count)
 void setup(App* app, UpgradeBubble* upgrade_bubbles, size_t auto_bubble_count)
 {
 	int window_width, window_height;
-	SDL_GetWindowSize(app->window, &window_width, &window_height);
+	GetWindowSizeI(app->window, &window_width, &window_height);
 
 	constexpr float radius = 48.0f;
 	constexpr float width = 128.0f;

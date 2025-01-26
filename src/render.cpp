@@ -117,7 +117,7 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 
 		{
 			int window_width, window_height;
-			SDL_GetWindowSize(app->window, &window_width, &window_height);
+			GetWindowSizeI(app->window, &window_width, &window_height);
 			float window_width_half = window_width / 2.0f;
 			float window_height_half = window_height / 2.0f;
 

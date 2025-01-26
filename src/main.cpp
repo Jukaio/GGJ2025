@@ -83,7 +83,7 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max, int po
 			auto_bubble->pop_animation.state = BubbleAnimationStateStop;
 
 			int window_width, window_height;
-			SDL_GetWindowSize(app.window, &window_width, &window_height);
+			GetWindowSizeI(app.window, &window_width, &window_height);
 			float window_width_half = window_width / 2.0f;
 			float window_height_half = window_height / 2.0f;
 
@@ -216,7 +216,7 @@ void main_run()
 
 	SDL_FRect canvas;
 	int w, h;
-	SDL_GetWindowSize(app.window, &w, &h);
+	GetWindowSizeI(app.window, &w, &h);
 	canvas.w = w;
 	canvas.h = h;
 	draw_stack_panel_left(&app, &canvas, &player_ui, &player_bubbles[0], &player.current_money);
@@ -356,7 +356,7 @@ int main(int argc, char* argv[])
 	SDL_zero(*app.upgrades);
 
 	app.tick_frequency = 0.25f;
-	app.window = SDL_CreateWindow("Bubble Clicker", 1920, 1080, 0);
+	app.window = SDL_CreateWindow("Bubble Clicker", 1920, 1080, SDL_WINDOW_RESIZABLE);
 	if (app.window == nullptr)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
