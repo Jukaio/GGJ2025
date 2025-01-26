@@ -136,8 +136,8 @@ enum class Upgrade
 	BubbleTriple2,
 
 	AutoBubble1,
-	AutoBubble2,
 	AutoBubble3,
+	AutoBubble2,
 	AutoBubble4,
 
 	Count
