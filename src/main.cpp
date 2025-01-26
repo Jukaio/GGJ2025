@@ -314,8 +314,8 @@ void main_run()
 			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
 			if (difference > 0)
 			{
-				simple_duck.amount = simple_duck.amount + difference;
-				const float upper_limit = 500.0f;
+				simple_duck.amount = simple_duck.amount + (difference * 2);
+				const float upper_limit = 100.0f;
 
 				float frac = (upper_limit - simple_duck.amount) / upper_limit;
 

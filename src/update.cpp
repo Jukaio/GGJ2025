@@ -208,6 +208,7 @@ void update(App* app, SinglePlayer* player, SimpleDuck* duck, PlayerBubble* play
 				if (player_bubble->bubble.consecutive_clicks > player_bubble->bubble.burst_cap)
 				{
 					animation_start(&player_bubble->pop_animation);
+					player_bubble->bubble.burst_cap = (rand() % 256) + 12;
 					player_bubble->bubble.consecutive_clicks = 0;
 					break;
 				}

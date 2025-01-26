@@ -14,7 +14,7 @@ void setup(App* app, PlayerBubble* player_bubbles, size_t count)
 
 	SDL_assert(count == 1 && "We only handle one player bubble for now");
 
-	animation_create(&player_bubbles->pop_animation, 1.45f, 24, Sprite::BubblePop1, Sprite::BubblePop2,
+	animation_create(&player_bubbles->pop_animation, 1.0f, 24, Sprite::BubblePop1, Sprite::BubblePop2,
 		Sprite::BubblePop3, Sprite::BubblePop4, Sprite::BubblePop5, Sprite::BubblePop6, Sprite::BubblePop7,
 		Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11, NO_SPRITE,
 		NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE,
@@ -46,7 +46,7 @@ void setup(App* app, AutoBubble* auto_bubbles, size_t auto_bubble_count)
 		AutoBubble* auto_bubble = &auto_bubbles[index];
 		Bubble* bubble = &auto_bubble->bubble;
 
-		animation_create(&auto_bubble->pop_animation, 1.45f, 24, Sprite::BubblePop1, Sprite::BubblePop2,
+		animation_create(&auto_bubble->pop_animation, 1.0f, 24, Sprite::BubblePop1, Sprite::BubblePop2,
 			Sprite::BubblePop3, Sprite::BubblePop4, Sprite::BubblePop5, Sprite::BubblePop6, Sprite::BubblePop7,
 			Sprite::BubblePop8, Sprite::BubblePop9, Sprite::BubblePop10, Sprite::BubblePop11, NO_SPRITE,
 			NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE, NO_SPRITE,
