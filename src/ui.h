@@ -201,7 +201,7 @@ inline void draw_wallet(const App* app, const SDL_FRect* canvas, SinglePlayerUI*
 	float half_height = canvas->h * 0.5f;
 	SDL_FRect top = *canvas;
 	top.h = half_height;
-	top.y = canvas->y - (top.h * 0.5f);
+	top.y = canvas->y - (top.h * 0.5f) - half_height * 0.15f;
 
 	SDL_FRect bottom = *canvas;
 	bottom.h = half_height;
@@ -295,7 +295,7 @@ inline void draw_stack_panel_left(const App* app,
 		const SDL_Color* c = affordable ? &afford : &no_afford;
 		// TTF_SetTextColor(app->upgrades->cost[i], c->r, c->g, c->b, c->a);
 		// TTF_SetTextString(app->upgrades->cost[i], buf, len);
-		SDL_FRect dst_icon = SDL_FRect{ btn.x + btn.w * 0.1f, btn.y + btn.h * 0.1f, btn.w * 0.8f, btn.h * 0.8f };
+		SDL_FRect dst_icon = SDL_FRect{ btn.x + btn.w * 0.2f, btn.y + btn.h * 0.2f, btn.w * 0.6f, btn.h * 0.6f };
 		{
 			float w, h;
 			SDL_Texture* texture = tex[(uint64_t)SkinIcons[i]];
