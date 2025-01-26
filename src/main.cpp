@@ -41,7 +41,7 @@ constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
 constexpr size_t player_bubble_count = 1;
 constexpr size_t auto_bubble_capacity = 256;
 constexpr size_t upgrade_bubble_count = 4;
-constexpr size_t particle_capacity = 1024;
+constexpr size_t particle_capacity = 128;
 
 App app;
 TTF_TextEngine* text_engine;
@@ -60,17 +60,17 @@ bool is_running;
 milliseconds tp;
 
 size_t simple_bathtub_count;
-SimpleBathtubs simple_bathtubs[1024];
+SimpleBathtubs simple_bathtubs[512];
 size_t luxury_bathtub_count;
-LuxuryBathtubs luxury_bathtub[1024];
+LuxuryBathtubs luxury_bathtub[512];
 
 SimpleDuck simple_duck;
 
 size_t premium_duck_count;
-PremiumDuck premium_simple_duck[1024];
+PremiumDuck premium_simple_duck[512];
 
 size_t luxury_duck_count;
-LuxuryDuck luxury_simple_duck[1024];
+LuxuryDuck luxury_simple_duck[512];
 
 void cleanup()
 {

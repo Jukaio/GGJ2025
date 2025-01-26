@@ -103,13 +103,7 @@ void update(const App* app,
 			if (is_player_clicking)
 			{
 				uint32_t total_emit_count = player_bubble->bubble.consecutive_clicks + emit_count;
-				if (*particle_count + total_emit_count > particle_capacity)
-				{
-					uint32_t difference = particle_capacity - *particle_count;
-					emit_particles(app, particles + difference, mx, my, bubble_pink_bright, difference);
-					*particle_count = particle_capacity;
-				}
-				else
+				if (*particle_count + total_emit_count <= particle_capacity)
 				{
 					emit_particles(app, particles + *particle_count, mx, my, bubble_pink_bright, total_emit_count);
 					*particle_count = *particle_count + total_emit_count;
