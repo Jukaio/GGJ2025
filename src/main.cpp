@@ -41,7 +41,7 @@ constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
 constexpr size_t player_bubble_count = 1;
 constexpr size_t auto_bubble_capacity = 256;
 constexpr size_t upgrade_bubble_count = 4;
-constexpr size_t particle_capacity = 1024;
+constexpr size_t particle_capacity = 128;
 
 App app;
 TTF_TextEngine* text_engine;
@@ -60,17 +60,17 @@ bool is_running;
 milliseconds tp;
 
 size_t simple_bathtub_count;
-SimpleBathtubs simple_bathtubs[1024];
+SimpleBathtubs simple_bathtubs[512];
 size_t luxury_bathtub_count;
-LuxuryBathtubs luxury_bathtub[1024];
+LuxuryBathtubs luxury_bathtub[512];
 
 SimpleDuck simple_duck;
 
 size_t premium_duck_count;
-PremiumDuck premium_simple_duck[1024];
+PremiumDuck premium_simple_duck[512];
 
 size_t luxury_duck_count;
-LuxuryDuck luxury_simple_duck[1024];
+LuxuryDuck luxury_simple_duck[512];
 
 void cleanup()
 {
@@ -314,14 +314,14 @@ void main_run()
 			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
 			if (difference > 0)
 			{
-				simple_duck.amount = simple_duck.amount + difference;
-				const float upper_limit = 500.0f;
+				simple_duck.amount = simple_duck.amount + (difference * 8);
+				const float upper_limit = 50.0f;
 
 				float frac = (upper_limit - simple_duck.amount) / upper_limit;
 
 				frac = SDL_clamp(frac * simple_duck.amount, 0.0f, 1.0f);
 
-				simple_duck.duration = lerp(0.125f, 5.0f, frac);
+				simple_duck.duration = lerp(0.100f, 4.8f, frac);
 				simple_duck.accumulator = SDL_min(simple_duck.accumulator, simple_duck.duration);
 			}
 		}
@@ -549,8 +549,6 @@ int main(int argc, char* argv[])
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
 		return -1;
 	}
-
-
 
 	load_assets(app.renderer);
 
