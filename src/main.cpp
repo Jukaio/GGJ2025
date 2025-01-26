@@ -116,6 +116,37 @@ void cleanup()
 	SDL_Quit();
 }
 
+SDL_EnumerationResult fck_print_directory(void* userdata, const char* dirname, const char* fname)
+{
+	const char* extension = SDL_strrchr(fname, '.');
+
+	SDL_PathInfo path_info;
+
+	size_t path_count = SDL_strlen(dirname);
+	size_t file_name_count = SDL_strlen(fname);
+	size_t total_count = file_name_count + path_count + 1;
+	char* path = (char*)SDL_malloc(total_count);
+	path[0] = '\0';
+
+	size_t last = 0;
+	last = SDL_strlcat(path, dirname, total_count);
+	last = SDL_strlcat(path, fname, total_count);
+
+	SDL_LogError(SDL_LOG_CATEGORY_ERROR, "%s - %s - %s", dirname, fname, extension);
+	if (SDL_GetPathInfo(path, &path_info))
+	{
+		if (path_info.type == SDL_PATHTYPE_DIRECTORY)
+		{
+			SDL_EnumerateDirectory(path, fck_print_directory, userdata);
+		}
+	}
+
+	SDL_free(path);
+
+	return SDL_ENUM_CONTINUE;
+}
+
+
 int main(int argc, char* argv[])
 {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
@@ -179,6 +210,8 @@ int main(int argc, char* argv[])
 
 	is_running = true;
 	tp = SDL_GetTicks();
+
+	SDL_EnumerateDirectory(SDL_GetCurrentDirectory(), fck_print_directory, nullptr);
 
 #ifdef __EMSCRIPTEN__
 	emscripten_set_main_loop(main_run, 0, 1);
