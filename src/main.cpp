@@ -89,6 +89,12 @@ void cleanup()
 	SDL_Quit();
 }
 
+#ifdef __EMSCRIPTEN__
+EM_JS(int, get_canvas_width, (), { return Module.canvas.width; });
+EM_JS(int, get_canvas_height, (), { return Module.canvas.height; });
+#endif
+
+
 static bool bubble_bubble_intersection(const Bubble* lhs, const Bubble* rhs)
 {
 	float alpha = get_legal_radius(lhs);
@@ -186,6 +192,9 @@ void main_run()
 #endif
 	}
 
+#ifdef __EMSCRIPTEN__
+	SDL_SetWindowSize(app.window, get_canvas_width(), get_canvas_height());
+#endif
 	// Input
 	update(&app.input);
 
@@ -505,7 +514,6 @@ void main_run()
 	player.current_multiplier = multiplier_pop;
 }
 
-
 int main(int argc, char* argv[])
 {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
@@ -528,7 +536,7 @@ int main(int argc, char* argv[])
 	SDL_zero(*app.upgrades);
 
 	app.tick_frequency = 0.25f;
-	app.window = SDL_CreateWindow("Bubble Clicker", 1920, 1080, SDL_WINDOW_RESIZABLE);
+	app.window = SDL_CreateWindow("Bubble Clicker", 1280, 720, SDL_WINDOW_RESIZABLE);
 	if (app.window == nullptr)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
@@ -541,6 +549,8 @@ int main(int argc, char* argv[])
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
 		return -1;
 	}
+
+
 
 	load_assets(app.renderer);
 

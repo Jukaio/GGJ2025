@@ -124,10 +124,13 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
 			float w, h;
 			SDL_GetTextureSize(texture, &w, &h);
-			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_FRect dst = SDL_FRect{ window_width_half, window_height_half, player_bubble->max_radius * 4.0f, player_bubble->max_radius * 4.0f };
-			dst.x -= player_bubble->max_radius * 2.0f;
-			dst.y -= player_bubble->max_radius * 2.0f;
+			SDL_FRect src = SDL_FRect{0, 0, w, h};
+			float max_radius = 0;
+			SDL_FRect dst;
+			dst.x = window_height * 0.45f;
+			dst.y = window_height * 0.05f;
+			dst.w = window_width * 0.5f;
+			dst.h = window_height * 0.9f;
 			SDL_RenderTexture9Grid(app->renderer, texture, &src, 128.0f, 128.0f, 128.0f, 128.0f, 0.26f, &dst);
 			//SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
