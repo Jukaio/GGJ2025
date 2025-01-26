@@ -112,9 +112,10 @@ static bool bubble_bubble_intersection(const Bubble* lhs, const Bubble* rhs)
 
 static AutoBubble* spawn_random_auto_bubble(int burst_min,
 	int burst_max,
-	int pop_reward_money,
-	int pop_reward_multiplier)
+	int pop_reward_money)
 {
+	SDL_assert(pop_reward_money >= 0);
+
 	AutoBubble* next = nullptr;
 
 	if (auto_bubble_count >= auto_bubble_capacity)
@@ -124,7 +125,6 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min,
 
 		player.current_money =
 			player.current_money + (pop_reward_money + 1 * (player.current_base * player.current_multiplier));
-		player.addon_multiplier = player.addon_multiplier + pop_reward_multiplier;
 		animation_start(&next->pop_animation);
 		return nullptr;
 	}
@@ -133,7 +133,7 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min,
 	AutoBubble* auto_bubble = &auto_bubbles[auto_bubble_count];
 	auto_bubble_count++;
 
-	auto_bubble->pop_countdown = (rand() % 15) + 20;
+	auto_bubble->pop_countdown = (rand() % 10) + 5;
 	auto_bubble->spawned_at = app.now;
 	next = auto_bubble;
 	next->is_dead = false;
@@ -284,7 +284,7 @@ void main_run()
 			{
 				for (int i = 0; i < difference; i++)
 				{
-					AutoBubble* bubble = spawn_random_auto_bubble(0, 1, 2, 1);
+					AutoBubble* bubble = spawn_random_auto_bubble(0, 1, 2);
 					if (bubble != nullptr)
 					{
 						bubble->archetype = 0;
@@ -301,7 +301,7 @@ void main_run()
 				{
 					int archetype_bias = (rand() % 255) + 1;
 					AutoBubble* bubble =
-						spawn_random_auto_bubble(archetype_bias, archetype_bias + 2, archetype_bias, archetype_bias);
+						spawn_random_auto_bubble(archetype_bias, archetype_bias + 2, archetype_bias);
 					if (bubble != nullptr)
 					{
 						bubble->archetype = uint8_t(archetype_bias);
@@ -350,12 +350,10 @@ void main_run()
 							AutoBubble* bubble = &auto_bubbles[random_index];
 
 							int archetype_bias = bubble->archetype;
-							player.current_money = player.current_money =
-								archetype_bias + (1 * (player.current_base * player.current_multiplier));
 
-							bubble->bubble.consecutive_clicks = bubble->bubble.consecutive_clicks;
+							bubble->bubble.consecutive_clicks = bubble->bubble.consecutive_clicks + duck->amount;
 							player.current_money =
-								player.current_money + (1 * (player.current_base * player.current_multiplier));
+								player.current_money + (1 * duck->amount * (player.current_base * player.current_multiplier));
 							break;
 						}
 						else
@@ -440,7 +438,7 @@ void main_run()
 					tub->accumulator -= 5.0f - (rand() % 10) / 10.0f;
 					for (int j = 0; j < tub->amount; j++)
 					{
-						AutoBubble* bubble = spawn_random_auto_bubble(0, 1, 2, 1);
+						AutoBubble* bubble = spawn_random_auto_bubble(0, 1, 2);
 						if (bubble != nullptr)
 						{
 							bubble->archetype = 0;
@@ -475,7 +473,7 @@ void main_run()
 					{
 						int archetype_bias = (rand() % 255) + 1;
 						AutoBubble* bubble = spawn_random_auto_bubble(archetype_bias, archetype_bias + 2,
-							archetype_bias, archetype_bias);
+							archetype_bias);
 						if (bubble != nullptr)
 						{
 							bubble->archetype = uint8_t(archetype_bias);

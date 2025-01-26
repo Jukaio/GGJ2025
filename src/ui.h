@@ -18,31 +18,31 @@ struct Button
 	SDL_FRect rect;
 };
 
-const Sprite UpgradeIcons[] = { Sprite::UpgradeDeadFish,  Sprite::UpgradeSoapUsed, Sprite::UpgradSoap,
-							   Sprite::UpgradeDuck,      Sprite::UpgradeDuckNeon,
-							   Sprite::UpgradeBathEmpty, Sprite::UpgradeDuckBetter, Sprite::UpgradeBath };
+const Sprite UpgradeIcons[] = { Sprite::UpgradeDeadFish,   Sprite::UpgradeSoapUsed, Sprite::UpgradeDuck,
+							   Sprite::UpgradSoap,        Sprite::UpgradeDuckNeon, Sprite::UpgradeBathEmpty,
+							   Sprite::UpgradeDuckBetter, Sprite::UpgradeBath };
 
-const char* UpgradeNames[] = { "Dead Fish", "Used Soap",  "Duck",  "Soap",
+const char* UpgradeNames[] = { "Dead Fish", "Used Soap",  "Duck",        "Soap",
 							  "Neon Duck", "Empty Bath", "Better Duck", "Full Bath" };
 
-const double UpgradeCostsIncrement[] = { 2,   50.0,  200.0,  2500.0,
+const double UpgradeCostsIncrement[] = { 2,      50.0,     200.0,     25000.0,
 
-							   5000.0, 500000.0, 1000000.0, 1000000.0 };
+										50000.0, 50000000.0, 250000000.0, 500000000.0 };
 
-double UpgradeCosts[] = { 50.0,   100.0,  2000.0,  10000.0,
+double UpgradeCosts[] = { 50.0, 100.0, 2000.0, 1000000.0, 2500000.0, 250000000.0, 500000000.0, 1000000000.0 };
 
-							   25000.0, 1000000.0, 5000000.0, 10000000.0 };
+double UpgradeCostsIncrementScalar[] = { 1.0, 4.0, 2.0, 4.0, 2.0, 4.0, 2.0, 4.0 };
 
-const double SkinCosts[] = { 100.0,   200.0,   500.0,    1000.0,   2500.0,   5000.0, 7500.0,  10000.0,
-							20000.0, 50000.0, 70000.0, 100000.0, 200000.0, 300000.0 };
+const double SkinCosts[] = { 100.0,   200.0,   500.0,   1000.0,  2500.0,   5000.0,   7500.0,
+							10000.0, 20000.0, 50000.0, 70000.0, 100000.0, 200000.0, 300000.0 };
 
 // Keep in sort!
 
-const Sprite SkinIcons[] = {
-	Sprite::BubbleGlare,     Sprite::BubbleAngel,      Sprite::BubbleDevil,
-	Sprite::BubbleGhostEyes, Sprite::BubbleGlasses,        Sprite::BubbleWeirdMouth, Sprite::BubbleGhost,
-	Sprite::BubbleDead,      Sprite::BubbleSunglassesPink, Sprite::BubbleBow,        Sprite::BubblesTie,
-	Sprite::BubbleKot, Sprite::BubbleCrown };
+const Sprite SkinIcons[] = { Sprite::BubbleGlare,     Sprite::BubbleAngel,   Sprite::BubbleDevil,
+							Sprite::BubbleGhostEyes, Sprite::BubbleGlasses, Sprite::BubbleWeirdMouth,
+							Sprite::BubbleGhost,     Sprite::BubbleDead,    Sprite::BubbleSunglassesPink,
+							Sprite::BubbleBow,       Sprite::BubblesTie,    Sprite::BubbleKot,
+							Sprite::BubbleCrown };
 
 
 struct Upgrades
@@ -76,7 +76,7 @@ struct UiState
 	UiTab tabs[(u64)Tab::Count];
 };
 
-inline bool button(const App* app, const SDL_FRect* btn, Sprite sprite)
+inline bool button(const App* app, const SDL_FRect* btn, Sprite sprite, bool blocked = false)
 {
 	const MouseDevice* m = &app->input.mouse;
 	SDL_FRect mouse_rect{ m->current.x, m->current.y, 1, 1 };
@@ -88,13 +88,16 @@ inline bool button(const App* app, const SDL_FRect* btn, Sprite sprite)
 	SDL_GetTextureSize(texture, &w, &h);
 	SDL_FRect src = SDL_FRect{ 0, 0, w, h };
 
-	if (overlap && button_down(m, 1))
+	if (!blocked)
 	{
-		SDL_SetTextureColorMod(texture, btn_press_tint.r, btn_press_tint.g, btn_press_tint.b);
-	}
-	else if (overlap)
-	{
-		SDL_SetTextureColorMod(texture, btn_over_tint.r, btn_over_tint.g, btn_over_tint.b);
+		if (overlap && button_down(m, 1))
+		{
+			SDL_SetTextureColorMod(texture, btn_press_tint.r, btn_press_tint.g, btn_press_tint.b);
+		}
+		else if (overlap)
+		{
+			SDL_SetTextureColorMod(texture, btn_over_tint.r, btn_over_tint.g, btn_over_tint.b);
+		}
 	}
 	SDL_RenderTexture9Grid(app->renderer, texture, &src, 128.0f, 128.0f, 128.0f, 128.0f, 0.16f, btn);
 
@@ -277,7 +280,7 @@ inline void draw_stack_panel_left(const App* app,
 		bool affordable = (double)*money >= cost;
 		bool will_buy = affordable && bub->owned_cosmetics[i] == false;
 
-		if (button(app, &btn, Sprite::BoxUI))
+		if (button(app, &btn, Sprite::BoxUI, !affordable))
 		{
 			if (will_buy)
 			{
@@ -297,25 +300,35 @@ inline void draw_stack_panel_left(const App* app,
 		char buf[64];
 		int len = SDL_snprintf(buf, 64, "Cost : %.0f", cost);
 
-		const SDL_Color* c = affordable ? &afford : &no_afford;
-		// TTF_SetTextColor(app->upgrades->cost[i], c->r, c->g, c->b, c->a);
-		// TTF_SetTextString(app->upgrades->cost[i], buf, len);
 		SDL_FRect dst_icon = SDL_FRect{ btn.x + btn.w * 0.2f, btn.y + btn.h * 0.2f, btn.w * 0.6f, btn.h * 0.6f };
+		if (affordable)
 		{
-			float w, h;
-			SDL_Texture* texture = tex[(uint64_t)SkinIcons[i]];
-			SDL_GetTextureSize(texture, &w, &h);
-			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-			SDL_RenderTexture(app->renderer, texture, &src, &dst_icon);
+			const SDL_Color* c = affordable ? &afford : &no_afford;
+			// TTF_SetTextColor(app->upgrades->cost[i], c->r, c->g, c->b, c->a);
+			// TTF_SetTextString(app->upgrades->cost[i], buf, len);
+			{
+				float w, h;
+				SDL_Texture* texture = tex[(uint64_t)SkinIcons[i]];
+				SDL_GetTextureSize(texture, &w, &h);
+				SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+				SDL_RenderTexture(app->renderer, texture, &src, &dst_icon);
+			}
 		}
-
 		if (!bub->owned_cosmetics[i])
 		{
 			SDL_Texture* lock = tex[(u64)Sprite::Lock];
 			float w, h;
 			SDL_GetTextureSize(lock, &w, &h);
 			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+			if (!affordable)
+			{
+				SDL_SetTextureAlphaMod(lock, 128);
+			}
 			SDL_RenderTexture(app->renderer, lock, &src, &dst_icon);
+			if (!affordable)
+			{
+				SDL_SetTextureAlphaMod(lock, 255);
+			}
 		}
 
 		if ((i % 3) == 2)
@@ -365,7 +378,7 @@ inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, SinglePlay
 				play(Audio::PopUI);
 				*money -= (u64)cost;
 				++app->upgrades->owned_upgrades[i];
-				cost = UpgradeCosts[i] = UpgradeCosts[i] + UpgradeCostsIncrement[i];
+				cost = UpgradeCosts[i] = UpgradeCostsIncrement[i] + (UpgradeCosts[i] * UpgradeCostsIncrementScalar[i]);
 			}
 			else {}
 		}
