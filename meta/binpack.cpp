@@ -83,6 +83,23 @@ struct Assets
 	std::vector<Asset> wave;
 };
 
+bool str_compare_case_i(const std::string& str1, const std::string& str2) {
+    return std::equal(str1.begin(), str1.end(), str2.begin(), str2.end(),
+                      [](char c1, char c2) {
+                          return std::tolower(static_cast<unsigned char>(c1)) == std::tolower(static_cast<unsigned char>(c2));
+                      });
+}
+
+bool sort_fun(const Asset& a, const Asset& b)
+{
+    return str_compare_case_i(a.name, b.name);
+}
+
+void sort_assets(std::vector<Asset>* inout_assets)
+{
+    std::sort(inout_assets->begin(), inout_assets->end(), sort_fun);
+}
+
 void load_assets(Assets* inout_assets)
 {
 	std::filesystem::path asset_path(asset_root);
@@ -129,6 +146,10 @@ void load_assets(Assets* inout_assets)
 			}
 		}
 	}
+
+    sort_assets(&inout_assets->fonts);
+    sort_assets(&inout_assets->images);
+    sort_assets(&inout_assets->wave);
 }
 
 struct AssetRef
