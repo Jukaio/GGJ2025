@@ -27,8 +27,8 @@ static void emit_particles(const App* app, Particle* particles, int x, int y, SD
 		particle->bubble.x = (float)x;
 		particle->bubble.y = (float)y;
 		particle->bubble.radius = radius;
-		particle->vx = cosf(angle) * speed;
-		particle->vy = sinf(angle) * speed;
+		particle->vx = SDL_cosf(angle) * speed;
+		particle->vy = SDL_sinf(angle) * speed;
 		particle->lifetime = (float)(rand() % 1000 + 100) / 1000.0f;
 
 		int num = (rand() % 10 + 1);

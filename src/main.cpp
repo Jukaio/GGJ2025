@@ -10,8 +10,6 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-
-#include "main.h"
 #endif
 
 struct PremiumDuck
