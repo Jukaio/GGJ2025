@@ -216,6 +216,13 @@ struct UpgradeBubble
 	SDL_Color color;
 };
 
+struct SimpleDuck
+{
+	float duration;
+	float accumulator;
+	uint32_t amount;
+};
+
 void animation_create(BubbleAnimation* animation, float duration, size_t sprite_count, ...);
 void animation_start(BubbleAnimation* animation);
 bool animation_try_get_current(const BubbleAnimation* animation, Sprite* sprite);

@@ -173,10 +173,13 @@ void update(const App* app,
 }
 
 
-void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t count)
+void update(App* app, SinglePlayer* player, SimpleDuck* duck, PlayerBubble* player_bubbles, size_t count)
 {
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 	bool is_space_press = key_just_down(&app->input.keyboard, SDL_SCANCODE_SPACE);
+
+	duck->accumulator -= app->delta_time;
+	bool is_duck_done = duck->accumulator < 0.0 && duck->amount > 0;
 
 	for (size_t index = 0; index < count; index++)
 	{
@@ -195,11 +198,11 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 		player_bubble->bubble.radius = lerp(player_bubble->min_radius, player_bubble->max_radius,
 			Bouncee::in_elastic(t) + Bouncee::out_elastic(t));
 
-		if (distance < get_legal_radius(&player_bubble->bubble) || is_space_press)
+		if (distance < get_legal_radius(&player_bubble->bubble) || is_space_press || is_duck_done)
 		{
 			player_bubble->bubble.color = bubble_blue;
 
-			if (is_player_clicking || is_space_press)
+			if (is_player_clicking || is_space_press || is_duck_done)
 			{
 				player_bubble->bubble.consecutive_clicks = player_bubble->bubble.consecutive_clicks + 1;
 				if (player_bubble->bubble.consecutive_clicks > player_bubble->bubble.burst_cap)
@@ -229,7 +232,9 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 				Audio target = pops[lower_bound + random];
 				play(target);
 
-				player->current_money = player->current_money + (1 * (player->current_base * player->current_multiplier));
+				uint64_t duck_score = is_duck_done ? duck->amount : 0;
+				player->current_money = player->current_money + ((1 + duck_score) *
+					(player->current_base * player->current_multiplier));
 				player_bubble->bubble.time_point_last_clicked = app->now;
 
 				player_bubble->bubble.color = bubble_blue_dark;
@@ -261,9 +266,13 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 			player_bubble->bubble.y = centerY + SDL_sin(t) * radiusY;
 		}
 	}
+	if (is_duck_done)
+	{
+		duck->accumulator = duck->duration;
+	}
 }
 
-void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubble* bubbles, size_t count)
+void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubble* bubbles, size_t* count)
 {
 	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 
@@ -274,9 +283,11 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 	float offset_y = 0.15f * window_height;
 
 
-	for (size_t index = 0; index < count; index++)
+	for (size_t index = 0; index < *count; index++)
 	{
 		AutoBubble* bubble = &bubbles[index];
+
+		bubble->bubble.color = bubble_white_bright;
 
 		if (bubble->is_dead)
 		{
@@ -287,6 +298,14 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 			if (!animation_update(app, &bubble->pop_animation))
 			{
 				bubble->is_dead = true;
+				// Remove swap back
+				AutoBubble temp = bubbles[*count - 1];
+				bubbles[*count - 1] = bubbles[index];
+				bubbles[index] = temp;
+				*count = *count - 1;
+				// Repeat current
+				index--;
+				break;
 			}
 			continue;
 		}
@@ -315,14 +334,17 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 
 			if (is_player_clicking)
 			{
-				player->current_money = player->current_money + (1 * (player->current_base * player->current_multiplier));
-				;
+				player->current_money =
+					player->current_money + (1 * (player->current_base * player->current_multiplier));
+
 				bubble->bubble.time_point_last_clicked = app->now;
 				bubble->bubble.color = bubble_blue_dark;
 
 				bubble->bubble.consecutive_clicks = bubble->bubble.consecutive_clicks + 1;
 				if (bubble->bubble.consecutive_clicks > bubble->bubble.burst_cap)
 				{
+					player->current_money =
+						bubble->archetype + (1 * (player->current_base * player->current_multiplier));
 					animation_start(&bubble->pop_animation);
 					continue;
 				}
@@ -356,10 +378,7 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 	}
 }
 
-void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count)
-{
-
-}
+void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count) {}
 
 
 void post_render_update(App* app,
@@ -460,7 +479,8 @@ void fixed_update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t co
 		while (inc->accumulator >= inc->cooldown)
 		{
 			inc->accumulator = inc->accumulator - inc->cooldown;
-			player->current_money = player->current_money + inc->gain * (player->current_base * player->current_multiplier);
+			player->current_money =
+				player->current_money + inc->gain * (player->current_base * player->current_multiplier);
 		}
 	}
 }

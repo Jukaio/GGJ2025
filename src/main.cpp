@@ -10,13 +10,31 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+
 #include "main.h"
 #endif
+
+struct PremiumDuck
+{
+	float accumulator;
+	uint32_t amount;
+};
+
+struct SimpleBathtubs
+{
+	float accumulator;
+	uint32_t amount;
+};
+struct LuxuryBathtubs
+{
+	float accumulator;
+	uint32_t amount;
+};
 
 constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
 
 constexpr size_t player_bubble_count = 1;
-constexpr size_t auto_bubble_capacity = 128;
+constexpr size_t auto_bubble_capacity = 256;
 constexpr size_t upgrade_bubble_count = 4;
 constexpr size_t particle_capacity = 1024;
 
@@ -26,6 +44,7 @@ SinglePlayer player;
 SinglePlayerUI player_ui;
 PlayerBubble player_bubbles[player_bubble_count];
 
+size_t auto_bubble_count = 0;
 AutoBubble auto_bubbles[auto_bubble_capacity];
 UpgradeBubble upgrade_bubbles[upgrade_bubble_count];
 
@@ -34,6 +53,17 @@ Particle particles[particle_capacity];
 
 bool is_running;
 milliseconds tp;
+
+size_t simple_bathtub_count;
+SimpleBathtubs simple_bathtubs[1024];
+size_t luxury_bathtub_count;
+LuxuryBathtubs luxury_bathtub[1024];
+
+SimpleDuck simple_duck;
+
+size_t premium_duck_count;
+PremiumDuck premium_simple_duck[1024];
+
 
 void cleanup()
 {
@@ -67,7 +97,10 @@ static bool bubble_bubble_intersection(const Bubble* lhs, const Bubble* rhs)
 	return length <= alpha + beta;
 }
 
-static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max, int pop_reward_money, int pop_reward_multiplier)
+static AutoBubble* spawn_random_auto_bubble(int burst_min,
+	int burst_max,
+	int pop_reward_money,
+	int pop_reward_multiplier)
 {
 	AutoBubble* next = nullptr;
 	for (size_t j = 0; j < auto_bubble_capacity; j++)
@@ -75,6 +108,8 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max, int po
 		AutoBubble* auto_bubble = &auto_bubbles[j];
 		if (auto_bubble->is_dead)
 		{
+			auto_bubble_count++;
+
 			auto_bubble->pop_countdown = (rand() % 15) + 20;
 			auto_bubble->spawned_at = app.now;
 			next = auto_bubble;
@@ -118,8 +153,10 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max, int po
 		for (int i = 0; i < player_bubble_count; i++)
 		{
 			uint32_t archetype_owned = 0;
-			for (int j = 0; j < 16; j++) {
-				if (player_bubbles[i].owned_cosmetics[j]) {
+			for (int j = 0; j < 16; j++)
+			{
+				if (player_bubbles[i].owned_cosmetics[j])
+				{
 					archetype_owned |= 1 << j;
 				}
 			}
@@ -131,6 +168,7 @@ static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max, int po
 		animation_start(&next->pop_animation);
 		return nullptr;
 	}
+	play(Audio::MildPop);
 	return next;
 }
 
@@ -165,8 +203,10 @@ void main_run()
 	for (int i = 0; i < player_bubble_count; i++)
 	{
 		uint32_t archetype_owned = 0;
-		for (int j = 0; j < 16; j++) {
-			if (player_bubbles[i].owned_cosmetics[j]) {
+		for (int j = 0; j < 16; j++)
+		{
+			if (player_bubbles[i].owned_cosmetics[j])
+			{
 				archetype_owned |= 1 << j;
 			}
 		}
@@ -174,10 +214,12 @@ void main_run()
 	}
 	player.current_base = player.current_base + player.addon_base;
 
-	uint64_t multiplier_pop = player.current_multiplier;;
-	for (int i = 0; i < auto_bubble_capacity; i++)
+	uint64_t multiplier_pop = player.current_multiplier;
+	;
+	for (int i = 0; i < auto_bubble_count; i++)
 	{
-		if (!auto_bubbles[i].is_dead) {
+		if (!auto_bubbles[i].is_dead)
+		{
 			player.current_multiplier = player.current_multiplier + auto_bubbles[i].archetype + 1;
 		}
 	}
@@ -191,14 +233,15 @@ void main_run()
 	while (app.tick_accumulator >= app.tick_frequency)
 	{
 		app.tick_accumulator = app.tick_accumulator - app.tick_frequency;
-		fixed_update(&app, &player, auto_bubbles, auto_bubble_capacity);
+		fixed_update(&app, &player, auto_bubbles, auto_bubble_count);
 	}
 
 	// Update
-	update(&app, &player, player_bubbles, player_bubble_count);
-	update(&app, &player, player_bubbles, auto_bubbles, auto_bubble_capacity);
+	update(&app, &player, &simple_duck, player_bubbles, player_bubble_count);
+	update(&app, &player, player_bubbles, auto_bubbles, &auto_bubble_count);
 	// update(&app, &player, upgrade_bubbles, upgrade_bubble_count);
-	update(&app, particles, &particle_count, particle_capacity, player_bubbles, player_bubble_count, auto_bubbles, auto_bubble_capacity);
+	update(&app, particles, &particle_count, particle_capacity, player_bubbles, player_bubble_count, auto_bubbles,
+		auto_bubble_count);
 	// Render
 
 	if (key_just_down(&app.input.keyboard, SDL_SCANCODE_X))
@@ -247,7 +290,8 @@ void main_run()
 				for (int i = 0; i < difference; i++)
 				{
 					AutoBubble* bubble = spawn_random_auto_bubble(0, 1, 2, 1);
-					if (bubble != nullptr) {
+					if (bubble != nullptr)
+					{
 						bubble->archetype = 0;
 					}
 				}
@@ -262,8 +306,10 @@ void main_run()
 				{
 					int archetype_bias = (rand() % 255) + 1;
 					int upper = SDL_max(archetype_bias / 4, 6);
-					AutoBubble* bubble = spawn_random_auto_bubble(archetype_bias, upper, archetype_bias, archetype_bias);
-					if (bubble != nullptr) {
+					AutoBubble* bubble =
+						spawn_random_auto_bubble(archetype_bias, upper, archetype_bias, archetype_bias);
+					if (bubble != nullptr)
+					{
 						bubble->archetype = uint8_t(archetype_bias);
 					}
 				}
@@ -271,18 +317,145 @@ void main_run()
 		}
 		{
 			uint32_t index = (uint32_t)Upgrade::BubbleTriple2;
+			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
+			if (difference > 0)
+			{
+				simple_duck.amount = simple_duck.amount + difference;
+				const float upper_limit = 500.0f;
+
+				float frac = (upper_limit - simple_duck.amount) / upper_limit;
+
+				frac = SDL_clamp(frac * simple_duck.amount, 0.0f, 1.0f);
+
+				simple_duck.duration = lerp(0.125f, 5.0f, frac);
+				simple_duck.accumulator = SDL_min(simple_duck.accumulator, simple_duck.duration);
+			}
 		}
 		{
+			size_t count = SDL_min(premium_duck_count, SDL_arraysize(premium_simple_duck));
+			for (int i = 0; i < count; i++)
+			{
+				PremiumDuck* duck = &premium_simple_duck[i];
+				duck->accumulator = duck->accumulator + app.delta_time;
+				if (duck->accumulator > 5.0f)
+				{
+					if (auto_bubble_count > 0)
+					{
+						play(Audio::Quak);
+					}
+				}
+				while (duck->accumulator > 5.0f)
+				{
+					// Add a stutter
+					duck->accumulator -= 5.0f - (rand() % 10) / 10.0f;
+					for (int j = 0; j < duck->amount; j++)
+					{
+						if (auto_bubble_count > 0)
+						{
+							size_t random_index = rand() % auto_bubble_count;
+							AutoBubble* bubble = &auto_bubbles[random_index];
+
+							int archetype_bias = bubble->archetype;
+							player.current_money = player.current_money =
+								archetype_bias + (1 * (player.current_base * player.current_multiplier));
+							player.addon_multiplier = player.addon_multiplier + archetype_bias;
+
+							bubble->bubble.consecutive_clicks = bubble->bubble.consecutive_clicks;
+							player.current_money =
+								player.current_money + (1 * (player.current_base * player.current_multiplier));
+							break;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+			}
 			uint32_t index = (uint32_t)Upgrade::AutoBubble1;
+			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
+			if (difference > 0)
+			{
+				for (int i = 0; i < difference; i++)
+				{
+					size_t index = premium_duck_count % SDL_arraysize(premium_simple_duck);
+					premium_simple_duck[index].amount++;
+					premium_duck_count++;
+				}
+			}
 		}
 		{
 			uint32_t index = (uint32_t)Upgrade::AutoBubble2;
 		}
 		{
+			size_t count = SDL_min(simple_bathtub_count, SDL_arraysize(simple_bathtubs));
+			for (int i = 0; i < count; i++)
+			{
+				SimpleBathtubs* tub = &simple_bathtubs[i];
+				tub->accumulator = tub->accumulator + app.delta_time;
+				while (tub->accumulator > 5.0f)
+				{
+					// Add a stutter
+					tub->accumulator -= 5.0f - (rand() % 10) / 10.0f;
+					for (int j = 0; j < tub->amount; j++)
+					{
+						AutoBubble* bubble = spawn_random_auto_bubble(0, 1, 2, 1);
+						if (bubble != nullptr)
+						{
+							bubble->archetype = 0;
+						}
+					}
+				}
+			}
+
 			uint32_t index = (uint32_t)Upgrade::AutoBubble3;
+			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
+			if (difference > 0)
+			{
+				for (int i = 0; i < difference; i++)
+				{
+					size_t index = simple_bathtub_count % SDL_arraysize(simple_bathtubs);
+					simple_bathtubs[index].amount++;
+					simple_bathtub_count++;
+				}
+			}
 		}
 		{
+			size_t count = SDL_min(luxury_bathtub_count, SDL_arraysize(luxury_bathtub));
+			for (int i = 0; i < count; i++)
+			{
+				LuxuryBathtubs* tub = &luxury_bathtub[i];
+				tub->accumulator = tub->accumulator + app.delta_time;
+				while (tub->accumulator > 5.0f)
+				{
+					// Add a stutter
+					tub->accumulator -= 5.0f - (rand() % 10) / 10.0f;
+					for (int j = 0; j < tub->amount; j++)
+					{
+						int archetype_bias = (rand() % 255) + 1;
+						int upper = SDL_max(archetype_bias / 4, 6);
+
+						AutoBubble* bubble =
+							spawn_random_auto_bubble(archetype_bias, upper, archetype_bias, archetype_bias);
+						if (bubble != nullptr)
+						{
+							bubble->archetype = uint8_t(archetype_bias);
+						}
+					}
+				}
+			}
+
 			uint32_t index = (uint32_t)Upgrade::AutoBubble4;
+			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
+			if (difference > 0)
+			{
+				for (int i = 0; i < difference; i++)
+				{
+					size_t index = luxury_bathtub_count % SDL_arraysize(luxury_bathtub);
+					luxury_bathtub[index].amount++;
+					luxury_bathtub_count++;
+				}
+			}
 		}
 
 		for (int i = 0; i < (int)Upgrade::Count; ++i)
@@ -393,8 +566,6 @@ int main(int argc, char* argv[])
 	setup(&app, player_bubbles, player_bubble_count);
 	setup(&app, auto_bubbles, auto_bubble_capacity);
 	setup(&app, upgrade_bubbles, upgrade_bubble_count);
-
-	playLoop( Audio::Soundtrack1 );
 
 	post_render_update(&app, &player, nullptr, 0, nullptr, 0, &player_ui, true);
 

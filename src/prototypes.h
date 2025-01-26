@@ -17,8 +17,8 @@ void update(const App* app,
 	struct AutoBubble* auto_bubbles,
 	size_t auto_count);
 
-void update(struct App* app, struct SinglePlayer* player, struct PlayerBubble* player_bubbles, size_t count);
-void update(struct App* app, struct SinglePlayer* player, struct PlayerBubble* main_player, struct AutoBubble* bubbles, size_t count);
+void update(struct App* app, struct SinglePlayer* player, struct SimpleDuck* duck, struct PlayerBubble* player_bubbles, size_t count);
+void update(struct App* app, struct SinglePlayer* player, struct PlayerBubble* main_player, struct AutoBubble* bubbles, size_t* count);
 void update(struct App* app, struct SinglePlayer* player, struct UpgradeBubble* bubbles, size_t count);
 void fixed_update(struct App* app, struct SinglePlayer* player, struct AutoBubble* bubbles, size_t count);
 void post_render_update(struct SinglePlayer* player);
