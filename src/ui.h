@@ -25,7 +25,11 @@ const Sprite UpgradeIcons[] = { Sprite::UpgradeDeadFish,  Sprite::UpgradeSoapUse
 const char* UpgradeNames[] = { "Dead Fish", "Used Soap",   "Soap",       "Duck",
 							  "Neon Duck", "Better Duck", "Empty Bath", "Full Bath" };
 
-const double UpgradeCosts[] = { 50.0,   100.0,  200.0,  800.0,
+const double UpgradeCostsIncrement[] = { 2,   5,  10.0,  40.0,
+
+							   50.0, 100.0, 250.0, 500.0 };
+
+double UpgradeCosts[] = { 50.0,   100.0,  200.0,  800.0,
 
 							   1000.0, 2000.0, 5000.0, 10000.0 };
 
@@ -360,6 +364,7 @@ inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, SinglePlay
 				play(Audio::PopUI);
 				*money -= (u64)cost;
 				++app->upgrades->owned_upgrades[i];
+				cost = UpgradeCosts[i] = UpgradeCosts[i] + UpgradeCostsIncrement[i];
 			}
 			else {}
 		}

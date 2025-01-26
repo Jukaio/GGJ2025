@@ -134,12 +134,8 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 
 		if (!animation_render(app, &player_bubble->pop_animation, &player_bubble->bubble))
 		{
-			uint64_t base_mask = 0b11 & player_bubble->archetype;
-			if (base_mask == 0)
-			{
-				render(app, bubble, Sprite::BubbleBase);
-			}
-			else if (player_bubble->is_cat && player_bubble->is_ghost)
+
+			if (player_bubble->is_cat && player_bubble->is_ghost)
 			{
 				render(app, bubble, Sprite::BubbleGhostCat);
 			}
@@ -151,29 +147,13 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			{
 				render(app, bubble, Sprite::BubbleGhost);
 			}
-			if (player_bubble->has_halo)
+			else
 			{
-				render(app, bubble, Sprite::BubbleAngel);
+				render(app, bubble, Sprite::BubbleBase);
 			}
-			if (player_bubble->has_dead_eyes)
+			if (player_bubble->has_has_glare)
 			{
-				render(app, bubble, Sprite::BubbleDead, false);
-			}
-			if (player_bubble->has_ghost_eyes)
-			{
-				render(app, bubble, Sprite::BubbleGhostEyes, false);
-			}
-			if (player_bubble->has_has_weird_mouth)
-			{
-				render(app, bubble, Sprite::BubbleWeirdMouth, false);
-			}
-			if (player_bubble->has_glasses)
-			{
-				render(app, bubble, Sprite::BubbleGlasses);
-			}
-			if (player_bubble->has_sun_glasses, false)
-			{
-				render(app, bubble, Sprite::BubbleSunglassesPink, false);
+				render(app, bubble, Sprite::BubbleGlare);
 			}
 			if (player_bubble->has_devil_horns)
 			{
@@ -182,6 +162,30 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			if (player_bubble->has_bow)
 			{
 				render(app, bubble, Sprite::BubbleBow);
+			}
+			if (player_bubble->has_halo)
+			{
+				render(app, bubble, Sprite::BubbleAngel);
+			}
+			if (player_bubble->has_dead_eyes)
+			{
+				render(app, bubble, Sprite::BubbleDead);
+			}
+			if (player_bubble->has_ghost_eyes)
+			{
+				render(app, bubble, Sprite::BubbleGhostEyes);
+			}
+			if (player_bubble->has_has_weird_mouth)
+			{
+				render(app, bubble, Sprite::BubbleWeirdMouth);
+			}
+			if (player_bubble->has_glasses)
+			{
+				render(app, bubble, Sprite::BubbleGlasses);
+			}
+			if (player_bubble->has_sun_glasses)
+			{
+				render(app, bubble, Sprite::BubbleSunglassesPink);
 			}
 			if (player_bubble->has_tie)
 			{
@@ -208,19 +212,50 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 		if (auto_bubble->is_dead) {
 			continue;
 		}
-		{
-			/*		SDL_Texture* texture = tex[(uint64_t)Sprite::BoxUI];
-					float w, h;
-					SDL_GetTextureSize(texture, &w, &h);
-					SDL_FRect src = SDL_FRect{ 0, 0, w, h };
-					SDL_FRect dst =
-						SDL_FRect{ auto_bubble->x, auto_bubble->y, auto_bubble->width, auto_bubble->height };
 
-					SDL_RenderTexture(app->renderer, texture, &src, &dst);*/
-		}
 		if (!animation_render(app, &auto_bubble->pop_animation, &auto_bubble->bubble))
 		{
-			render(app, bubble, Sprite::BubbleKot);
+			uint8_t base_mask = 0 & auto_bubble->archetype;
+			if (base_mask == 0)
+			{
+				render(app, bubble, Sprite::BubbleBase);
+			}
+			else if (auto_bubble->is_cat && auto_bubble->is_ghost)
+			{
+				render(app, bubble, Sprite::BubbleGhostCat);
+			}
+			else if (auto_bubble->is_cat)
+			{
+				render(app, bubble, Sprite::BubbleKot);
+			}
+			else if (auto_bubble->is_ghost)
+			{
+				render(app, bubble, Sprite::BubbleGhost);
+			}
+			if (auto_bubble->has_dead_eyes)
+			{
+				render(app, bubble, Sprite::BubbleDead);
+			}
+			if (auto_bubble->has_has_weird_mouth)
+			{
+				render(app, bubble, Sprite::BubbleWeirdMouth);
+			}
+			if (auto_bubble->has_sun_glasses)
+			{
+				render(app, bubble, Sprite::BubbleSunglassesPink);
+			}
+			if (auto_bubble->has_bow)
+			{
+				render(app, bubble, Sprite::BubbleBow);
+			}
+			if (auto_bubble->has_tie)
+			{
+				render(app, bubble, Sprite::BubblesTie);
+			}
+			if (auto_bubble->has_has_glare)
+			{
+				render(app, bubble, Sprite::BubbleGlare);
+			}
 		}
 	}
 }

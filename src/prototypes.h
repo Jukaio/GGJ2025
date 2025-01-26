@@ -20,7 +20,14 @@ void update(struct App* app, struct SinglePlayer* player, struct PlayerBubble* m
 void update(struct App* app, struct SinglePlayer* player, struct UpgradeBubble* bubbles, size_t count);
 void fixed_update(struct App* app, struct SinglePlayer* player, struct AutoBubble* bubbles, size_t count);
 void post_render_update(struct SinglePlayer* player);
-void post_render_update(struct App* app, struct SinglePlayer* player, struct SinglePlayerUI* ui, bool force = false);
+void post_render_update(App* app,
+	struct SinglePlayer* player,
+	struct PlayerBubble* player_bubbles,
+	size_t player_bubbles_count,
+	struct AutoBubble* auto_bubbles,
+	size_t auto_bubble_count,
+	struct SinglePlayerUI* ui,
+	bool force);
 
 void render(struct App* app, const struct Bubble* bubble, Sprite sprite, float offset_x = 0.0f, float offset_y = 0.0f);
 void render(struct App* app, struct PlayerBubble* bubbles, size_t count);

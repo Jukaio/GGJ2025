@@ -10,12 +10,13 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#include "main.h"
 #endif
 
 constexpr SDL_Color white = SDL_Color{ 255, 255, 255, 255 };
 
 constexpr size_t player_bubble_count = 1;
-constexpr size_t auto_bubble_capacity = 6;
+constexpr size_t auto_bubble_capacity = 128;
 constexpr size_t upgrade_bubble_count = 4;
 constexpr size_t particle_capacity = 1024;
 
@@ -66,6 +67,73 @@ static bool bubble_bubble_intersection(const Bubble* lhs, const Bubble* rhs)
 	return length <= alpha + beta;
 }
 
+static AutoBubble* spawn_random_auto_bubble(int burst_min, int burst_max, int pop_reward_money, int pop_reward_multiplier)
+{
+	AutoBubble* next = nullptr;
+	for (size_t j = 0; j < auto_bubble_capacity; j++)
+	{
+		AutoBubble* auto_bubble = &auto_bubbles[j];
+		if (auto_bubble->is_dead)
+		{
+			auto_bubble->pop_countdown = (rand() % 15) + 20;
+			auto_bubble->spawned_at = app.now;
+			next = auto_bubble;
+			next->is_dead = false;
+			auto_bubble->bubble.consecutive_clicks = 0;
+			auto_bubble->bubble.burst_cap = (rand() % (burst_max - burst_min)) + burst_min;
+			auto_bubble->pop_animation.state = BubbleAnimationStateStop;
+
+			int window_width, window_height;
+			SDL_GetWindowSize(app.window, &window_width, &window_height);
+			float window_width_half = window_width / 2.0f;
+			float window_height_half = window_height / 2.0f;
+
+			auto_bubble->max_radius = 256.0f * 0.3f;
+			auto_bubble->min_radius = 228.0f * 0.3f;
+
+			float difference = auto_bubble->max_radius - auto_bubble->min_radius;
+
+			auto_bubble->min_radius = (rand() % 32) + auto_bubble->min_radius;
+			auto_bubble->max_radius = auto_bubble->min_radius + difference;
+			next->bubble.x = (rand() % int(window_width * 0.8f)) + int(window_width * 0.1f);
+			next->bubble.y = (rand() % int(window_height * 0.8f)) + int(window_height * 0.1f);
+			for (size_t iterations = 0; iterations < 8; iterations++)
+			{
+				if (!bubble_bubble_intersection(&player_bubbles->bubble, &next->bubble))
+				{
+					break;
+				}
+				next->bubble.x = (rand() % int(window_width * 0.8f)) + int(window_width * 0.1f);
+				next->bubble.y = (rand() % int(window_height * 0.8f)) + int(window_height * 0.1f);
+			}
+			break;
+		}
+	}
+	if (next == nullptr)
+	{
+		next = &auto_bubbles[rand() % auto_bubble_capacity];
+		next->pop_countdown = 0;
+
+		uint64_t base_line = 0;
+		for (int i = 0; i < player_bubble_count; i++)
+		{
+			uint32_t archetype_owned = 0;
+			for (int j = 0; j < 16; j++) {
+				if (player_bubbles[i].owned_cosmetics[j]) {
+					archetype_owned |= 1 << j;
+				}
+			}
+			base_line = archetype_owned / 2;
+		}
+
+		player.current_money = pop_reward_money + (1 * (player.current_base * player.current_multiplier));
+		player.addon_multiplier = player.addon_multiplier + pop_reward_multiplier;
+		animation_start(&next->pop_animation);
+		return nullptr;
+	}
+	return next;
+}
+
 void main_run()
 {
 	milliseconds now = SDL_GetTicks();
@@ -91,6 +159,30 @@ void main_run()
 
 	// Input
 	update(&app.input);
+
+	// Pre-caln
+	uint64_t base_pop = player.current_base;
+	for (int i = 0; i < player_bubble_count; i++)
+	{
+		uint32_t archetype_owned = 0;
+		for (int j = 0; j < 16; j++) {
+			if (player_bubbles[i].owned_cosmetics[j]) {
+				archetype_owned |= 1 << j;
+			}
+		}
+		player.current_base = player.current_base + archetype_owned / 2;
+	}
+	player.current_base = player.current_base + player.addon_base;
+
+	uint64_t multiplier_pop = player.current_multiplier;;
+	for (int i = 0; i < auto_bubble_capacity; i++)
+	{
+		if (!auto_bubbles[i].is_dead) {
+			player.current_multiplier = player.current_multiplier + auto_bubbles[i].archetype + 1;
+		}
+	}
+	player.current_multiplier = player.current_multiplier + player.addon_multiplier;
+
 
 	// Fixed Update
 	app.now = now / 1000.0f;
@@ -121,7 +213,6 @@ void main_run()
 
 	// render(&app, upgrade_bubbles, upgrade_bubble_count);
 	render(&app, player_bubbles, player_bubble_count);
-	render(&app, auto_bubbles, auto_bubble_capacity);
 	render(&app, particles, particle_count);
 
 	SDL_FRect canvas;
@@ -131,6 +222,8 @@ void main_run()
 	canvas.h = h;
 	draw_stack_panel_left(&app, &canvas, &player_ui, &player_bubbles[0], &player.current_money);
 	draw_stack_panel(&app, &canvas, &player, &player.current_money);
+
+	render(&app, auto_bubbles, auto_bubble_capacity);
 
 	SDL_RenderPresent(app.renderer);
 
@@ -143,7 +236,7 @@ void main_run()
 			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
 			if (difference > 0)
 			{
-				player.current_base = player.current_base + difference * 2;
+				player.addon_base = player.addon_base + 1;
 			}
 		}
 		{
@@ -153,53 +246,28 @@ void main_run()
 			{
 				for (int i = 0; i < difference; i++)
 				{
-
-					AutoBubble* next = nullptr;
-					for (size_t j = 0; j < auto_bubble_capacity; j++)
-					{
-						AutoBubble* auto_bubble = &auto_bubbles[j];
-						if (auto_bubble->is_dead)
-						{
-							auto_bubble->pop_countdown = (rand() % 15) + 20;
-							auto_bubble->spawned_at = app.now;
-							next = auto_bubble;
-							next->is_dead = false;
-							auto_bubble->bubble.consecutive_clicks = 0;
-							auto_bubble->bubble.burst_cap = (rand() % 10) + 2;
-							auto_bubble->pop_animation.state = BubbleAnimationStateStop;
-							int window_width, window_height;
-							SDL_GetWindowSize(app.window, &window_width, &window_height);
-							float window_width_half = window_width / 2.0f;
-							float window_height_half = window_height / 2.0f;
-							SDL_FRect dst =
-								SDL_FRect{ window_width_half, window_height_half, player_bubbles->max_radius * 4.0f,
-										  player_bubbles->max_radius * 4.0f };
-
-							next->bubble.x = (rand() % (int)dst.w) + (int)dst.x - (dst.w / 2);
-							next->bubble.y = (rand() % (int)dst.h) + (int)dst.y - (dst.h / 2);
-							for (size_t iterations = 0; iterations < 8; iterations++)
-							{
-								if (!bubble_bubble_intersection(&player_bubbles->bubble, &next->bubble))
-								{
-									break;
-								}
-								next->bubble.x = (rand() % (int)canvas.w) + (int)canvas.x;
-								next->bubble.y = (rand() % (int)canvas.h) + (int)canvas.y;
-							}
-							break;
-						}
-					}
-					if (next == nullptr)
-					{
-						next = &auto_bubbles[rand() % auto_bubble_capacity];
-						next->pop_countdown = 0;
-						animation_start(&next->pop_animation);
+					AutoBubble* bubble = spawn_random_auto_bubble(0, 1, 2, 1);
+					if (bubble != nullptr) {
+						bubble->archetype = 0;
 					}
 				}
 			}
 		}
 		{
 			uint32_t index = (uint32_t)Upgrade::BubbleTripler1;
+			int difference = player.current_upgrade_levels[index] - player.previous_upgrades_levels[index];
+			if (difference > 0)
+			{
+				for (int i = 0; i < difference; i++)
+				{
+					int archetype_bias = (rand() % 255) + 1;
+					int upper = SDL_max(archetype_bias / 4, 6);
+					AutoBubble* bubble = spawn_random_auto_bubble(archetype_bias, upper, archetype_bias, archetype_bias);
+					if (bubble != nullptr) {
+						bubble->archetype = uint8_t(archetype_bias);
+					}
+				}
+			}
 		}
 		{
 			uint32_t index = (uint32_t)Upgrade::BubbleTriple2;
@@ -217,12 +285,23 @@ void main_run()
 			uint32_t index = (uint32_t)Upgrade::AutoBubble4;
 		}
 
+		for (int i = 0; i < (int)Upgrade::Count; ++i)
+		{
+			double cost = UpgradeCosts[i];
+			int difference = player.current_upgrade_levels[i] - player.previous_upgrades_levels[i];
+			player.addon_multiplier = player.addon_multiplier + (difference * i);
+		}
+
 		SDL_memcpy(player.previous_upgrades_levels, player.current_upgrade_levels,
 			sizeof(player.current_upgrade_levels));
 	}
 
-	post_render_update(&app, &player, &player_ui);
+
+	post_render_update(&app, &player, player_bubbles, 1, auto_bubbles, auto_bubble_capacity, &player_ui, true);
 	post_render_update(&player);
+
+	player.current_base = base_pop;
+	player.current_multiplier = multiplier_pop;
 }
 
 SDL_EnumerationResult fck_print_directory(void* userdata, const char* dirname, const char* fname)
@@ -315,7 +394,7 @@ int main(int argc, char* argv[])
 	setup(&app, auto_bubbles, auto_bubble_capacity);
 	setup(&app, upgrade_bubbles, upgrade_bubble_count);
 
-	post_render_update(&app, &player, &player_ui, true);
+	post_render_update(&app, &player, nullptr, 0, nullptr, 0, &player_ui, true);
 
 	is_running = true;
 	tp = SDL_GetTicks();

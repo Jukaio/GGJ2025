@@ -186,7 +186,7 @@ void update(App* app, SinglePlayer* player, PlayerBubble* player_bubbles, size_t
 				Audio target = pops[lower_bound + random];
 				play(target);
 
-				player->current_money = player->current_money + (player->current_base * player->current_multiplier);
+				player->current_money = player->current_money + (1 * (player->current_base * player->current_multiplier));
 				player_bubble->bubble.time_point_last_clicked = app->now;
 
 				player_bubble->bubble.color = bubble_blue_dark;
@@ -235,36 +235,36 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 	{
 		AutoBubble* bubble = &bubbles[index];
 
-		//bubble->bubble.x = offset_x;
-		//bubble->bubble.y = offset_y + (offset_y * index);
-		if (bubble->is_dead) {
+		if (bubble->is_dead)
+		{
 			continue;
 		}
-		if (bubble->pop_animation.state == BubbleAnimationStatePlaying) {
-			if (!animation_update(app, &bubble->pop_animation)) {
+		if (bubble->pop_animation.state == BubbleAnimationStatePlaying)
+		{
+			if (!animation_update(app, &bubble->pop_animation))
+			{
 				bubble->is_dead = true;
 			}
 			continue;
 		}
 		bubble->pop_countdown = bubble->pop_countdown - app->delta_time;
-		if (bubble->pop_countdown < 0.0f) {
+		if (bubble->pop_countdown < 0.0f)
+		{
+
+			player->current_money = player->current_money + (1 * (player->current_base * player->current_multiplier));
+			player->current_multiplier = player->current_multiplier + bubble->archetype + 1;
 			animation_start(&bubble->pop_animation);
 			continue;
 		}
 
 		float t = SDL_sin((app->now - bubble->spawned_at) * 0.5f) * 0.5f + 0.5f;
-		bubble->bubble.radius = lerp(bubble->min_radius, bubble->max_radius,
-			Bouncee::in_elastic(t) + Bouncee::out_elastic(t));
+		bubble->bubble.radius =
+			lerp(bubble->min_radius, bubble->max_radius, Bouncee::in_elastic(t) + Bouncee::out_elastic(t));
 
 		MouseState const* state = &app->input.mouse.current;
 		float global_x = bubble->bubble.x;
 		float global_y = bubble->bubble.y;
 		float distance = math_distance(state->x, state->y, global_x, global_y);
-		if (player->current_money < bubble->inc.cost)
-		{
-			bubble->bubble.color = bubble_pink_bright;
-			continue;
-		}
 
 		if (distance < get_legal_radius(&bubble->bubble))
 		{
@@ -272,6 +272,11 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 
 			if (is_player_clicking)
 			{
+				player->current_money = player->current_money + (1 * (player->current_base * player->current_multiplier));
+				;
+				bubble->bubble.time_point_last_clicked = app->now;
+				bubble->bubble.color = bubble_blue_dark;
+
 				bubble->bubble.consecutive_clicks = bubble->bubble.consecutive_clicks + 1;
 				if (bubble->bubble.consecutive_clicks > bubble->bubble.burst_cap)
 				{
@@ -280,14 +285,13 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 				}
 				const uint32_t sliding_pop_window = 3;
 				const Audio pops[] = {
-					Audio::Pop0, Audio::Pop1, Audio::Pop2, Audio::Pop3, Audio::Pop4,
-					Audio::Pop5, Audio::Pop6, Audio::Pop7,
+					Audio::Pop0, Audio::Pop1, Audio::Pop2, Audio::Pop3,
+					Audio::Pop4, Audio::Pop5, Audio::Pop6, Audio::Pop7,
 				};
 
 				const uint32_t pop_count = (sizeof(pops) / sizeof(*pops)) - sliding_pop_window;
 
-				const uint32_t burst_difference =
-					bubble->bubble.burst_cap - bubble->bubble.consecutive_clicks;
+				const uint32_t burst_difference = bubble->bubble.burst_cap - bubble->bubble.consecutive_clicks;
 				const float frac =
 					SDL_clamp(1.0f - (float(burst_difference) / float(bubble->bubble.burst_cap)), 0.0f, 1.0f);
 				const uint32_t lower_bound = pop_count * frac;
@@ -296,11 +300,6 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 
 				Audio target = pops[lower_bound + random];
 				play(target);
-
-				player->current_money = player->current_money - bubble->inc.cost;
-				bubble->inc.amount = bubble->inc.amount + 1;
-				bubble->bubble.time_point_last_clicked = app->now;
-				bubble->bubble.color = bubble_blue_dark;
 			}
 			else
 			{
@@ -316,58 +315,27 @@ void update(App* app, SinglePlayer* player, PlayerBubble* main_player, AutoBubbl
 
 void update(App* app, SinglePlayer* player, UpgradeBubble* bubbles, size_t count)
 {
-	bool is_player_clicking = button_just_down(&app->input.mouse, 1);
 
-	for (size_t index = 0; index < count; index++)
-	{
-		UpgradeBubble* bubble = &bubbles[index];
-
-		MouseState const* state = &app->input.mouse.current;
-		float global_x = bubble->bubble.x + bubble->x;
-		float global_y = bubble->bubble.y + bubble->y;
-		float distance = math_distance(state->x, state->y, global_x, global_y);
-		if (player->current_money < bubble->inc.cost)
-		{
-			bubble->bubble.color = bubble_pink_bright;
-			continue;
-		}
-
-		if (distance < get_legal_radius(&bubble->bubble))
-		{
-			bubble->bubble.color = bubble_blue;
-
-			if (is_player_clicking)
-			{
-				play(Audio::MildPop);
-
-				player->current_money = player->current_money - bubble->inc.cost;
-				player->current_base = player->current_base + bubble->inc.base_bonus;
-				player->current_multiplier = player->current_multiplier + bubble->inc.multiplier_bonus;
-
-				bubble->bubble.time_point_last_clicked = app->now;
-				bubble->bubble.color = bubble_blue_dark;
-			}
-			else
-			{
-				bubble->bubble.color = bubble_blue;
-			}
-		}
-		else
-		{
-			bubble->bubble.color = bubble_white_bright;
-		}
-	}
 }
 
 
-void post_render_update(App* app, SinglePlayer* player, SinglePlayerUI* ui, bool force)
+void post_render_update(App* app,
+	SinglePlayer* player,
+	PlayerBubble* player_bubbles,
+	size_t player_bubbles_count,
+	AutoBubble* auto_bubbles,
+	size_t auto_bubble_count,
+	SinglePlayerUI* ui,
+	bool force)
 {
 	if (force || player->previous_money != player->current_money)
 	{
-		if (player->current_money > 9999999999ull) {
+		if (player->current_money > 9999999999ull)
+		{
 			TTF_SetTextFont(ui->money, fonts_med[(u64)Font::JuicyFruity]);
 		}
-		else {
+		else
+		{
 			TTF_SetTextFont(ui->money, fonts[(u64)Font::JuicyFruity]);
 		}
 		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "%llu", player->current_money);
@@ -376,18 +344,23 @@ void post_render_update(App* app, SinglePlayer* player, SinglePlayerUI* ui, bool
 			TTF_SetTextString(ui->money, ui->buffer, 0);
 		}
 	}
+
 	if (force || player->previous_base != player->current_base)
 	{
-		if (player->current_base > 9999999999ull) {
+		if (player->current_base > 9999999999ull)
+		{
 			TTF_SetTextFont(ui->base, fonts_tiny[(u64)Font::JuicyFruity]);
 		}
-		else if (player->current_base > 9999999ull) {
+		else if (player->current_base > 9999999ull)
+		{
 			TTF_SetTextFont(ui->base, fonts_small[(u64)Font::JuicyFruity]);
 		}
-		else if (player->current_base > 9999ull) {
+		else if (player->current_base > 9999ull)
+		{
 			TTF_SetTextFont(ui->base, fonts_med[(u64)Font::JuicyFruity]);
 		}
-		else {
+		else
+		{
 			TTF_SetTextFont(ui->base, fonts[(u64)Font::JuicyFruity]);
 		}
 		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "%llu", player->current_base);
@@ -398,16 +371,20 @@ void post_render_update(App* app, SinglePlayer* player, SinglePlayerUI* ui, bool
 	}
 	if (force || player->previous_multiplier != player->current_multiplier)
 	{
-		if (player->current_multiplier > 9999999999ull) {
+		if (player->current_multiplier > 9999999999ull)
+		{
 			TTF_SetTextFont(ui->multiplier, fonts_tiny[(u64)Font::JuicyFruity]);
 		}
-		else if (player->current_multiplier > 9999999ull) {
+		else if (player->current_multiplier > 9999999ull)
+		{
 			TTF_SetTextFont(ui->multiplier, fonts_small[(u64)Font::JuicyFruity]);
 		}
-		else if (player->current_multiplier > 9999ull) {
+		else if (player->current_multiplier > 9999ull)
+		{
 			TTF_SetTextFont(ui->multiplier, fonts_med[(u64)Font::JuicyFruity]);
 		}
-		else {
+		else
+		{
 			TTF_SetTextFont(ui->multiplier, fonts[(u64)Font::JuicyFruity]);
 		}
 		int length = SDL_snprintf(ui->buffer, sizeof(ui->buffer), "%llu", player->current_multiplier);
@@ -426,10 +403,12 @@ void fixed_update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t co
 	for (size_t index = 0; index < count; index++)
 	{
 		AutoBubble* bubble = &bubbles[index];
-		if (bubble->is_dead) {
+		if (bubble->is_dead)
+		{
 			continue;
 		}
-		if (bubble->pop_animation.state == BubbleAnimationStatePlaying) {
+		if (bubble->pop_animation.state == BubbleAnimationStatePlaying)
+		{
 			continue;
 		}
 		AutoBubbleIncremental* inc = &bubble->inc;
@@ -438,7 +417,7 @@ void fixed_update(App* app, SinglePlayer* player, AutoBubble* bubbles, size_t co
 		while (inc->accumulator >= inc->cooldown)
 		{
 			inc->accumulator = inc->accumulator - inc->cooldown;
-			player->current_money = player->current_money + inc->gain * inc->amount;
+			player->current_money = player->current_money + inc->gain * (player->current_base * player->current_multiplier);
 		}
 	}
 }

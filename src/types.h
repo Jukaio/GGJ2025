@@ -26,6 +26,9 @@ struct SinglePlayer
 	int previous_upgrades_levels[(int)Upgrade::Count];
 	int current_upgrade_levels[(int)Upgrade::Count];
 
+	uint64_t addon_multiplier;
+	uint64_t addon_base;
+
 	uint64_t previous_money;
 	uint64_t current_money;
 
@@ -129,57 +132,6 @@ struct PlayerBubble
 			uint8_t has_tie : 1;
 			uint8_t is_cat : 1;
 			uint8_t has_crown : 1;
-			uint8_t e13 : 1;
-			uint8_t e14 : 1;
-			uint8_t e15 : 1;
-			uint8_t e16 : 1;
-			uint8_t e17 : 1;
-			uint8_t e18 : 1;
-			uint8_t e19 : 1;
-			uint8_t e20 : 1;
-			uint8_t e21 : 1;
-			uint8_t e22 : 1;
-			uint8_t e23 : 1;
-			uint8_t e24 : 1;
-			uint8_t e25 : 1;
-			uint8_t e26 : 1;
-			uint8_t e27 : 1;
-			uint8_t e28 : 1;
-			uint8_t e29 : 1;
-			uint8_t e30 : 1;
-			uint8_t e31 : 1;
-			uint8_t e32 : 1;
-			uint8_t e33 : 1;
-			uint8_t e34 : 1;
-			uint8_t e35 : 1;
-			uint8_t e36 : 1;
-			uint8_t e37 : 1;
-			uint8_t e38 : 1;
-			uint8_t e39 : 1;
-			uint8_t e40 : 1;
-			uint8_t e41 : 1;
-			uint8_t e42 : 1;
-			uint8_t e43 : 1;
-			uint8_t e44 : 1;
-			uint8_t e45 : 1;
-			uint8_t e46 : 1;
-			uint8_t e47 : 1;
-			uint8_t e48 : 1;
-			uint8_t e49 : 1;
-			uint8_t e50 : 1;
-			uint8_t e51 : 1;
-			uint8_t e52 : 1;
-			uint8_t e53 : 1;
-			uint8_t e54 : 1;
-			uint8_t e55 : 1;
-			uint8_t e56 : 1;
-			uint8_t e57 : 1;
-			uint8_t e58 : 1;
-			uint8_t e59 : 1;
-			uint8_t e60 : 1;
-			uint8_t e61 : 1;
-			uint8_t e62 : 1;
-			uint8_t e63 : 1;
 		};
 	};
 };
@@ -202,7 +154,6 @@ struct AutoBubbleIncremental
 
 	// Dynamic
 	uint32_t accumulator;
-	uint32_t amount;
 };
 
 struct AutoBubble
