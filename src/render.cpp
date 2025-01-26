@@ -107,7 +107,8 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			SDL_FRect dst = SDL_FRect{ window_width_half, window_height_half, player_bubble->max_radius * 4.0f, player_bubble->max_radius * 4.0f };
 			dst.x -= player_bubble->max_radius * 2.0f;
 			dst.y -= player_bubble->max_radius * 2.0f;
-			SDL_RenderTexture(app->renderer, texture, &src, &dst);
+			SDL_RenderTexture9Grid(app->renderer, texture, &src, 128.0f, 128.0f, 128.0f, 128.0f, 0.26f, &dst);
+			//SDL_RenderTexture(app->renderer, texture, &src, &dst);
 		}
 
 		if (!animation_render(app, &player_bubble->pop_animation, &player_bubble->bubble))

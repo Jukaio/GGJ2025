@@ -104,6 +104,8 @@ struct PlayerBubble
 	float min_radius;
 	float max_radius;
 
+	bool owned_cosmetics[16];
+
 	union
 	{
 		uint64_t archetype;

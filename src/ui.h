@@ -124,6 +124,7 @@ const Sprite SkinIcons[] =
 	Sprite::BubbleKot
 };
 
+
 struct Upgrades
 {
 	int owned_upgrades[(int)Upgrade::Count];
@@ -262,6 +263,89 @@ inline bool button(const App* app, const SDL_FRect* btn, Sprite sprite)
 const SDL_Color afford = { 120, 255, 120, 255 };
 const SDL_Color no_afford = { 255, 120, 120, 255 };
 
+inline bool is_bit_set(u64 value, int bit)
+{
+	u64 mask = (1 << bit);
+	return value & mask;
+}
+
+inline void flip_bit(u64* value, int bit)
+{
+	u64 mask = (1 << bit);
+	*value = *value ^ mask;
+}
+
+inline void draw_stack_panel_left(const App* app, const SDL_FRect* canvas, PlayerBubble* bub, u64* money)
+{
+	SDL_FRect btn;
+	btn.w = canvas->w * 0.06f;
+	btn.h = btn.w;
+	btn.x = canvas->h * 0.04f;
+	btn.y = canvas->h * 0.04f;
+
+	const int num = SDL_arraysize(SkinIcons);
+
+	float off = btn.h + 0.15f * btn.h;
+
+	for (int i = 0; i < num; ++i)
+	{
+		double cost = SkinCosts[i];
+		bool affordable = (double)*money >= cost;
+		bool will_buy = affordable && bub->owned_cosmetics[i] == false;
+
+		if (button(app, &btn, Sprite::BoxUI2))
+		{
+			if (will_buy)
+			{
+				bub->owned_cosmetics[i] = true;
+				play(Audio::PopUI);
+				flip_bit(&bub->archetype, i);
+				*money -= (u64)cost;
+			}
+			else if (bub->owned_cosmetics[i])
+			{
+				play(Audio::PopUI);
+				flip_bit(&bub->archetype, i);
+			}
+		}
+
+
+		char buf[64];
+		int len = SDL_snprintf(buf, 64, "Cost : %.0f", cost);
+
+		const SDL_Color* c = affordable ? &afford : &no_afford;
+		//TTF_SetTextColor(app->upgrades->cost[i], c->r, c->g, c->b, c->a);
+		//TTF_SetTextString(app->upgrades->cost[i], buf, len);
+		SDL_FRect dst_icon = SDL_FRect{btn.x + btn.w * 0.1f, btn.y + btn.h * 0.1f, btn.w * 0.8f,btn.h * 0.8f };
+		{
+			float w, h;
+			SDL_Texture* texture = tex[(uint64_t)SkinIcons[i]];
+			SDL_GetTextureSize(texture, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+			SDL_RenderTexture( app->renderer, texture, &src, &dst_icon );
+		}
+
+		if (!bub->owned_cosmetics[i])
+		{
+			SDL_Texture* lock = tex[(u64)Sprite::Lock];
+			float w, h;
+			SDL_GetTextureSize(lock, &w, &h);
+			SDL_FRect src = SDL_FRect{ 0, 0, w, h };
+			SDL_RenderTexture( app->renderer, lock, &src, &dst_icon );
+		}
+
+		if (i & 1)
+		{
+			btn.x -= off;
+			btn.y += off;
+		}
+		else
+		{
+			btn.x += off;
+		}
+	}
+}
+
 inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, u64* money)
 {
 	SDL_FRect btn;
@@ -276,10 +360,18 @@ inline void draw_stack_panel(const App* app, const SDL_FRect* canvas, u64* money
 	{
 		double cost = UpgradeCosts[i];
 		bool affordable = (double)*money >= cost;
-		if (button(app, &btn, Sprite::BoxUI2) && affordable)
+		if (button(app, &btn, Sprite::BoxUI2))
 		{
-			*money -= (u64)cost;
-			++app->upgrades->owned_upgrades[i];
+			if (affordable)
+			{
+				play(Audio::PopUI);
+				*money -= (u64)cost;
+				++app->upgrades->owned_upgrades[i];
+			}
+			else
+			{
+				
+			}
 		}
 		char buf[64];
 		int len = SDL_snprintf(buf, 64, "Cost : %.0f", cost);
