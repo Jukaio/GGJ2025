@@ -34,11 +34,8 @@ const double SkinCosts[] = { 100.0,   200.0,   500.0,    1000.0,   2000.0,   500
 
 // Keep in sort!
 
-const char* SkinNames[] = { "Glare", "Basic",     "Angel",       "Devil", "Eyes", "Glasses", "Mouth",
-						   "Ghost", "Dead Eyes", "Sun Glasses", "Bow",   "Tie",  "Kot" };
-
 const Sprite SkinIcons[] = {
-	Sprite::BubbleGlare,     Sprite::BubbleBase,           Sprite::BubbleAngel,      Sprite::BubbleDevil,
+	Sprite::BubbleGlare,     Sprite::BubbleAngel,      Sprite::BubbleDevil,
 	Sprite::BubbleGhostEyes, Sprite::BubbleGlasses,        Sprite::BubbleWeirdMouth, Sprite::BubbleGhost,
 	Sprite::BubbleDead,      Sprite::BubbleSunglassesPink, Sprite::BubbleBow,        Sprite::BubblesTie,
 	Sprite::BubbleKot };
@@ -196,7 +193,7 @@ inline void flip_bit(u64* value, int bit)
 
 inline void draw_wallet(const App* app, const SDL_FRect* canvas, SinglePlayerUI* player_ui)
 {
-	SDL_Texture* texture = tex[(u64)Sprite::BoxUI2];
+	SDL_Texture* texture = tex[(u64)Sprite::BoxUI];
 	float w, h;
 	SDL_GetTextureSize(texture, &w, &h);
 	SDL_FRect src = SDL_FRect{ 0, 0, w, h };

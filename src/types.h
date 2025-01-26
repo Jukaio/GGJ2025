@@ -116,18 +116,18 @@ struct PlayerBubble
 		uint64_t archetype;
 		struct
 		{
-			uint8_t is_cat : 1;
+			uint8_t has_has_glare : 1;
+			uint8_t has_halo : 1;
+			uint8_t has_devil_horns : 1;
+			uint8_t has_ghost_eyes : 1;
+			uint8_t has_glasses : 1;
+			uint8_t has_has_weird_mouth : 1;
 			uint8_t is_ghost : 1;
 			uint8_t has_dead_eyes : 1;
-			uint8_t has_ghost_eyes : 1;
 			uint8_t has_sun_glasses : 1;
-			uint8_t has_halo : 1;
-			uint8_t has_glasses : 1;
 			uint8_t has_bow : 1;
 			uint8_t has_tie : 1;
-			uint8_t has_devil_horns : 1;
-			uint8_t has_has_glare : 1;
-			uint8_t has_has_weird_mouth : 1;
+			uint8_t is_cat : 1;
 			uint8_t e12 : 1;
 			uint8_t e13 : 1;
 			uint8_t e14 : 1;
