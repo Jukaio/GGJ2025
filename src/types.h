@@ -128,7 +128,7 @@ struct PlayerBubble
 			uint8_t has_bow : 1;
 			uint8_t has_tie : 1;
 			uint8_t is_cat : 1;
-			uint8_t e12 : 1;
+			uint8_t has_crown : 1;
 			uint8_t e13 : 1;
 			uint8_t e14 : 1;
 			uint8_t e15 : 1;

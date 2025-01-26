@@ -29,8 +29,8 @@ const double UpgradeCosts[] = { 50.0,   100.0,  200.0,  800.0,
 
 							   1000.0, 2000.0, 5000.0, 10000.0 };
 
-const double SkinCosts[] = { 100.0,   200.0,   500.0,    1000.0,   2000.0,   5000.0,   10000.0,
-							20000.0, 50000.0, 100000.0, 200000.0, 500000.0, 1000000.0 };
+const double SkinCosts[] = { 100.0,   200.0,   500.0,    1000.0,   2500.0,   5000.0, 7500.0,  10000.0,
+							20000.0, 50000.0, 70000.0, 100000.0, 200000.0, 300000.0 };
 
 // Keep in sort!
 
@@ -38,7 +38,7 @@ const Sprite SkinIcons[] = {
 	Sprite::BubbleGlare,     Sprite::BubbleAngel,      Sprite::BubbleDevil,
 	Sprite::BubbleGhostEyes, Sprite::BubbleGlasses,        Sprite::BubbleWeirdMouth, Sprite::BubbleGhost,
 	Sprite::BubbleDead,      Sprite::BubbleSunglassesPink, Sprite::BubbleBow,        Sprite::BubblesTie,
-	Sprite::BubbleKot };
+	Sprite::BubbleKot, Sprite::BubbleCrown };
 
 
 struct Upgrades
