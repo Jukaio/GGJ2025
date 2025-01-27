@@ -319,7 +319,7 @@ void main_run()
 
 				float frac = (upper_limit - simple_duck.amount) / upper_limit;
 
-				frac = SDL_clamp(frac * simple_duck.amount, 0.0f, 1.0f);
+				frac = SDL_clamp(frac, 0.0f, 1.0f);
 
 				simple_duck.duration = lerp(0.100f, 4.8f, frac);
 				simple_duck.accumulator = SDL_min(simple_duck.accumulator, simple_duck.duration);

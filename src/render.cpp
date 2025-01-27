@@ -154,6 +154,7 @@ void render(App* app, PlayerBubble* bubbles, size_t count)
 			{
 				render(app, bubble, Sprite::BubbleBase);
 			}
+			
 			if (player_bubble->has_has_glare)
 			{
 				render(app, bubble, Sprite::BubbleGlare);
@@ -218,12 +219,7 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 
 		if (!animation_render(app, &auto_bubble->pop_animation, &auto_bubble->bubble))
 		{
-			uint8_t base_mask = 0 & auto_bubble->archetype;
-			if (base_mask == 0)
-			{
-				render(app, bubble, Sprite::BubbleBase);
-			}
-			else if (auto_bubble->is_cat && auto_bubble->is_ghost)
+			if (auto_bubble->is_cat && auto_bubble->is_ghost)
 			{
 				render(app, bubble, Sprite::BubbleGhostCat);
 			}
@@ -235,6 +231,11 @@ void render(App* app, AutoBubble* bubbles, size_t count)
 			{
 				render(app, bubble, Sprite::BubbleGhost);
 			}
+			else
+			{
+				render(app, bubble, Sprite::BubbleBase);
+			}
+
 			if (auto_bubble->has_dead_eyes)
 			{
 				render(app, bubble, Sprite::BubbleDead);
